@@ -16,6 +16,7 @@ import {
   YAxis,
 } from "recharts";
 import { AppShell } from "@/components/app-shell";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -75,7 +76,7 @@ function Dashboard() {
     },
   });
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["dashboard", filters],
     queryFn: () => fetchDashboard(filters),
   });
@@ -148,7 +149,19 @@ function Dashboard() {
         </div>
       </div>
 
-      {isLoading || !data ? (
+      {isError ? (
+        <div role="alert" className="eco-surface flex flex-col items-start gap-3 p-5">
+          <div>
+            <h2 className="font-display text-sm font-bold">Data dashboard gagal dimuat</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Periksa koneksi dan akses akun, lalu coba muat ulang.
+            </p>
+          </div>
+          <Button variant="outline" onClick={() => void refetch()}>
+            Coba lagi
+          </Button>
+        </div>
+      ) : isLoading || !data ? (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 8 }).map((_, i) => (
             <Skeleton key={i} className="h-24 rounded-xl" />
@@ -178,8 +191,12 @@ function Dashboard() {
             <Kpi label="Residual rate" value={fmtPct(data.kpi.residualRate)} />
             <Kpi
               label="Pengurangan sampah"
-              value={fmtPct(data.kpi.reductionRate)}
-              hint={`Periode sebelumnya ${fmtKg(data.kpi.prevTotal)}`}
+              value={data.kpi.prevTotal > 0 ? fmtPct(data.kpi.reductionRate) : "Belum ada data"}
+              hint={
+                data.kpi.prevTotal > 0
+                  ? `Periode sebelumnya ${fmtKg(data.kpi.prevTotal)}`
+                  : "Belum tersedia periode pembanding"
+              }
             />
           </div>
 

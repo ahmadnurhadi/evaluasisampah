@@ -18,6 +18,22 @@ function startOfDay(date: string) {
   return `${date}T00:00:00.000Z`;
 }
 
+async function fetchAllRows<T>(
+  fetchPage: (start: number, end: number) => PromiseLike<{
+    data: T[] | null;
+    error: { message: string } | null;
+  }>,
+): Promise<T[]> {
+  const pageSize = 1000;
+  const rows: T[] = [];
+  for (let start = 0; ; start += pageSize) {
+    const { data, error } = await fetchPage(start, start + pageSize - 1);
+    if (error) throw error;
+    rows.push(...(data ?? []));
+    if (!data || data.length < pageSize) return rows;
+  }
+}
+
 export async function fetchDashboard(f: DashboardFilters) {
   let records = supabase
     .from("waste_records")
@@ -28,55 +44,59 @@ export async function fetchDashboard(f: DashboardFilters) {
   if (f.locationId) records = records.eq("location_id", f.locationId);
   if (f.category) records = records.eq("category", f.category);
   if (f.sourceId) records = records.eq("source_id", f.sourceId);
+  let previousRecords = supabase
+    .from("waste_records")
+    .select("weight_kg, location_id, source_id, category")
+    .is("deleted_at", null)
+    .gte("recorded_at", startOfDay(prevFrom))
+    .lte("recorded_at", endOfDay(prevTo));
+  if (f.locationId) previousRecords = previousRecords.eq("location_id", f.locationId);
+  if (f.category) previousRecords = previousRecords.eq("category", f.category);
+  if (f.sourceId) previousRecords = previousRecords.eq("source_id", f.sourceId);
 
   const prevSpanMs = new Date(f.to).getTime() - new Date(f.from).getTime();
   const prevTo = new Date(new Date(f.from).getTime() - 86400000).toISOString().slice(0, 10);
   const prevFrom = new Date(new Date(prevTo).getTime() - prevSpanMs).toISOString().slice(0, 10);
 
-  const [
-    { data: recordRows },
-    { data: prevRows },
-    { data: processingRows },
-    { data: utilRows },
-    { data: saleRows },
-    { data: residualRows },
-    { data: sourceRows },
-  ] = await Promise.all([
-    records,
-    supabase
-      .from("waste_records")
-      .select("weight_kg")
-      .is("deleted_at", null)
-      .gte("recorded_at", startOfDay(prevFrom))
-      .lte("recorded_at", endOfDay(prevTo)),
-    supabase
+  const [recordRows, prevRows, processingRows, utilRows, saleRows, residualRows, sourceRows] = await Promise.all([
+    fetchAllRows((start, end) => records.range(start, end)),
+    fetchAllRows((start, end) => previousRecords.range(start, end)),
+    fetchAllRows((start, end) => supabase
       .from("waste_processing")
       .select("input_weight_kg, output_weight_kg, method, processed_at")
       .is("deleted_at", null)
       .gte("processed_at", startOfDay(f.from))
-      .lte("processed_at", endOfDay(f.to)),
-    supabase
+      .lte("processed_at", endOfDay(f.to))
+      .range(start, end)),
+    fetchAllRows((start, end) => supabase
       .from("waste_utilization")
       .select("weight_kg, economic_value, utilization_type, used_at")
       .is("deleted_at", null)
       .gte("used_at", startOfDay(f.from))
-      .lte("used_at", endOfDay(f.to)),
-    supabase
+      .lte("used_at", endOfDay(f.to))
+      .range(start, end)),
+    fetchAllRows((start, end) => supabase
       .from("waste_sales")
       .select("weight_kg, total_value, category, sold_at")
       .is("deleted_at", null)
       .gte("sold_at", startOfDay(f.from))
-      .lte("sold_at", endOfDay(f.to)),
-    supabase
+      .lte("sold_at", endOfDay(f.to))
+      .range(start, end)),
+    fetchAllRows((start, end) => supabase
       .from("residual_disposals")
       .select("weight_kg, disposed_at")
       .is("deleted_at", null)
       .gte("disposed_at", startOfDay(f.from))
-      .lte("disposed_at", endOfDay(f.to)),
-    supabase.from("waste_sources").select("id, name").is("deleted_at", null),
+      .lte("disposed_at", endOfDay(f.to))
+      .range(start, end)),
+    fetchAllRows((start, end) => supabase
+      .from("waste_sources")
+      .select("id, name")
+      .is("deleted_at", null)
+      .range(start, end)),
   ]);
 
-  const recs = recordRows ?? [];
+  const recs = recordRows;
   const sum = (arr: { weight_kg: number | string }[]) =>
     arr.reduce((a, r) => a + Number(r.weight_kg ?? 0), 0);
 
@@ -90,22 +110,22 @@ export async function fetchDashboard(f: DashboardFilters) {
   const b3 = byCategory.get("b3") ?? 0;
   const residualGenerated = byCategory.get("residual") ?? 0;
 
-  const processed = (processingRows ?? []).reduce((a, r) => a + Number(r.input_weight_kg ?? 0), 0);
-  const organicProcessed = (processingRows ?? [])
+  const processed = processingRows.reduce((a, r) => a + Number(r.input_weight_kg ?? 0), 0);
+  const organicProcessed = processingRows
     .filter((r) => r.method === "composting" || r.method === "eco_enzyme")
     .reduce((a, r) => a + Number(r.input_weight_kg ?? 0), 0);
-  const recycled = (processingRows ?? [])
+  const recycled = processingRows
     .filter((r) => r.method === "recycling" || r.method === "upcycling")
     .reduce((a, r) => a + Number(r.input_weight_kg ?? 0), 0);
 
-  const utilized = sum(utilRows ?? []);
-  const utilizationValue = (utilRows ?? []).reduce((a, r) => a + Number(r.economic_value ?? 0), 0);
-  const sold = sum(saleRows ?? []);
-  const revenue = (saleRows ?? []).reduce((a, r) => a + Number(r.total_value ?? 0), 0);
-  const disposed = sum(residualRows ?? []);
+  const utilized = sum(utilRows);
+  const utilizationValue = utilRows.reduce((a, r) => a + Number(r.economic_value ?? 0), 0);
+  const sold = sum(saleRows);
+  const revenue = saleRows.reduce((a, r) => a + Number(r.total_value ?? 0), 0);
+  const disposed = sum(residualRows);
 
   const diverted = utilized + sold + recycled;
-  const prevTotal = sum(prevRows ?? []);
+  const prevTotal = sum(prevRows);
 
   // monthly trend from records
   const trendMap = new Map<string, number>();
@@ -117,7 +137,7 @@ export async function fetchDashboard(f: DashboardFilters) {
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([date, weight]) => ({ date, weight: Number(weight.toFixed(2)) }));
 
-  const sourceNames = new Map((sourceRows ?? []).map((s) => [s.id, s.name]));
+  const sourceNames = new Map(sourceRows.map((s) => [s.id, s.name]));
   const sourceMap = new Map<string, number>();
   for (const r of recs) {
     const name = r.source_id ? (sourceNames.get(r.source_id) ?? "Lainnya") : "Tidak diisi";

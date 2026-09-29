@@ -5,11 +5,9 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
-import { ROLE_LABEL, type AppRole } from "@/lib/waste";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -23,22 +21,12 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
-const SIGNUP_ROLES: AppRole[] = [
-  "school_admin",
-  "coordinator",
-  "teacher",
-  "cleaning_staff",
-  "student",
-  "principal",
-];
-
 function AuthPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
-  const [role, setRole] = useState<AppRole>("teacher");
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -63,7 +51,7 @@ function AuthPage() {
       password,
       options: {
         emailRedirectTo: `${window.location.origin}/dashboard`,
-        data: { full_name: fullName, role },
+        data: { full_name: fullName },
       },
     });
     setLoading(false);
@@ -134,21 +122,9 @@ function AuthPage() {
                   <Label htmlFor="password2">Kata sandi</Label>
                   <Input id="password2" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
                 </div>
-                <div className="space-y-2">
-                  <Label>Peran</Label>
-                  <Select value={role} onValueChange={(v) => setRole(v as AppRole)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {SIGNUP_ROLES.map((r) => (
-                        <SelectItem key={r} value={r}>
-                          {ROLE_LABEL[r]}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                <p className="text-xs text-muted-foreground">
+                  Akun baru terdaftar sebagai Guru. Administrator sekolah dapat mengubah peran Anda.
+                </p>
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? "Memproses..." : "Buat akun"}
                 </Button>

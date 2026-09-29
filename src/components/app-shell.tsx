@@ -29,32 +29,36 @@ import { useAuthProfile } from "@/hooks/use-auth";
 import { ROLE_LABEL } from "@/lib/waste";
 import { cn } from "@/lib/utils";
 
-type NavItem = { to: string; label: string; icon: typeof Leaf };
+type NavItem = { to: string; label: string; icon: typeof Leaf; permission?: "recorder" | "manager" };
 
 export const NAV_ITEMS: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/input", label: "Input Sampah", icon: PlusCircle },
-  { to: "/collection", label: "Pengumpulan", icon: Truck },
+  { to: "/input", label: "Input Sampah", icon: PlusCircle, permission: "recorder" },
+  { to: "/collection", label: "Pengumpulan", icon: Truck, permission: "recorder" },
   { to: "/batches", label: "Batch Sampah", icon: Boxes },
-  { to: "/sorting", label: "Pemilahan", icon: SplitSquareHorizontal },
-  { to: "/processing", label: "Pengolahan", icon: Recycle },
-  { to: "/utilization", label: "Pemanfaatan", icon: Sprout },
-  { to: "/waste-bank", label: "Bank Sampah", icon: Coins },
-  { to: "/residual", label: "Residu", icon: Trash2 },
+  { to: "/sorting", label: "Pemilahan", icon: SplitSquareHorizontal, permission: "recorder" },
+  { to: "/processing", label: "Pengolahan", icon: Recycle, permission: "recorder" },
+  { to: "/utilization", label: "Pemanfaatan", icon: Sprout, permission: "recorder" },
+  { to: "/waste-bank", label: "Bank Sampah", icon: Coins, permission: "manager" },
+  { to: "/residual", label: "Residu", icon: Trash2, permission: "recorder" },
   { to: "/audits", label: "Audit", icon: ClipboardCheck },
-  { to: "/findings", label: "Temuan", icon: AlertTriangle },
-  { to: "/activities", label: "Kegiatan", icon: CalendarHeart },
+  { to: "/findings", label: "Temuan", icon: AlertTriangle, permission: "recorder" },
+  { to: "/activities", label: "Kegiatan", icon: CalendarHeart, permission: "recorder" },
   { to: "/reports", label: "Laporan", icon: FileBarChart },
-  { to: "/qr", label: "QR Code", icon: QrCode },
-  { to: "/master-data", label: "Master Data", icon: Database },
-  { to: "/settings", label: "Pengaturan", icon: Settings },
+  { to: "/qr", label: "QR Code", icon: QrCode, permission: "manager" },
+  { to: "/master-data", label: "Master Data", icon: Database, permission: "manager" },
+  { to: "/settings", label: "Pengguna dan Akses", icon: Settings, permission: "manager" },
 ];
 
-function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
+function NavLinks({ onNavigate, canRecord, isManager }: { onNavigate?: () => void; canRecord: boolean; isManager: boolean }) {
+  function NavLinks({ onNavigate, canRecord, isManager, roles }: { onNavigate?: () => void; canRecord: boolean; isManager: boolean; roles: ReturnType<typeof useAuthProfile>["roles"] }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   return (
     <nav className="flex flex-col gap-1 p-3">
-      {NAV_ITEMS.map((item) => {
+      {NAV_ITEMS.filter((item) => item.permission !== "recorder" || canRecord)
+        .filter((item) => item.permission !== "manager" || isManager)
+          .filter((item) => item.to !== "/settings" || roles.some((role) => role === "super_admin" || role === "school_admin"))
+        .map((item) => {
         const active = pathname === item.to || pathname.startsWith(`${item.to}/`);
         const Icon = item.icon;
         return (
@@ -73,7 +77,7 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
             {item.label}
           </Link>
         );
-      })}
+        })}
     </nav>
   );
 }
@@ -103,7 +107,7 @@ export function AppShell({
   actions?: ReactNode;
   children: ReactNode;
 }) {
-  const { user, roles } = useAuthProfile();
+  const { user, roles, canRecord, isManager } = useAuthProfile();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -120,7 +124,7 @@ export function AppShell({
       <aside className="fixed inset-y-0 left-0 hidden w-64 flex-col border-r border-sidebar-border bg-sidebar lg:flex">
         <Brand />
         <div className="flex-1 overflow-y-auto">
-          <NavLinks />
+          <NavLinks canRecord={canRecord} isManager={isManager} roles={roles} />
         </div>
         <div className="border-t border-sidebar-border p-3">
           <p className="truncate text-xs font-medium">{user?.profile?.full_name || user?.email}</p>
@@ -145,7 +149,7 @@ export function AppShell({
               <SheetTitle className="sr-only">Menu navigasi</SheetTitle>
               <Brand />
               <div className="max-h-[calc(100vh-9rem)] overflow-y-auto">
-                <NavLinks onNavigate={() => setOpen(false)} />
+                <NavLinks onNavigate={() => setOpen(false)} canRecord={canRecord} isManager={isManager} roles={roles} />
               </div>
               <div className="border-t border-sidebar-border p-3">
                 <Button variant="ghost" size="sm" className="w-full justify-start" onClick={handleSignOut}>

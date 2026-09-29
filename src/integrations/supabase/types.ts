@@ -81,6 +81,7 @@ export type Database = {
           participant_count: number
           photo_url: string | null
           result: string | null
+          school_id: string | null
           updated_at: string
           waste_collected_kg: number
           waste_utilized_kg: number
@@ -98,6 +99,7 @@ export type Database = {
           participant_count?: number
           photo_url?: string | null
           result?: string | null
+          school_id?: string | null
           updated_at?: string
           waste_collected_kg?: number
           waste_utilized_kg?: number
@@ -115,6 +117,7 @@ export type Database = {
           participant_count?: number
           photo_url?: string | null
           result?: string | null
+          school_id?: string | null
           updated_at?: string
           waste_collected_kg?: number
           waste_utilized_kg?: number
@@ -125,6 +128,13 @@ export type Database = {
             columns: ["location_id"]
             isOneToOne: false
             referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activities_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
             referencedColumns: ["id"]
           },
         ]
@@ -160,6 +170,50 @@ export type Database = {
             columns: ["activity_id"]
             isOneToOne: false
             referencedRelation: "activities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_events: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          entity_id: string
+          entity_table: string
+          id: string
+          new_data: Json | null
+          old_data: Json | null
+          operation: string
+          school_id: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          entity_id: string
+          entity_table: string
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          operation: string
+          school_id?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          entity_id?: string
+          entity_table?: string
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          operation?: string
+          school_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_events_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
             referencedColumns: ["id"]
           },
         ]
@@ -248,6 +302,7 @@ export type Database = {
           is_demo: boolean
           max_score: number
           name: string
+          school_id: string | null
           weight: number
         }
         Insert: {
@@ -258,6 +313,7 @@ export type Database = {
           is_demo?: boolean
           max_score?: number
           name: string
+          school_id?: string | null
           weight?: number
         }
         Update: {
@@ -268,9 +324,18 @@ export type Database = {
           is_demo?: boolean
           max_score?: number
           name?: string
+          school_id?: string | null
           weight?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "audit_indicators_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       audit_scores: {
         Row: {
@@ -494,6 +559,7 @@ export type Database = {
           is_demo: boolean
           name: string
           phone: string | null
+          school_id: string | null
           type: string
         }
         Insert: {
@@ -505,6 +571,7 @@ export type Database = {
           is_demo?: boolean
           name: string
           phone?: string | null
+          school_id?: string | null
           type?: string
         }
         Update: {
@@ -516,9 +583,18 @@ export type Database = {
           is_demo?: boolean
           name?: string
           phone?: string | null
+          school_id?: string | null
           type?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "partners_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -682,6 +758,7 @@ export type Database = {
           is_demo: boolean
           location_id: string | null
           notes: string | null
+          request_id: string | null
           school_id: string | null
           source_id: string | null
           stage: Database["public"]["Enums"]["batch_stage"]
@@ -699,6 +776,7 @@ export type Database = {
           is_demo?: boolean
           location_id?: string | null
           notes?: string | null
+          request_id?: string | null
           school_id?: string | null
           source_id?: string | null
           stage?: Database["public"]["Enums"]["batch_stage"]
@@ -716,6 +794,7 @@ export type Database = {
           is_demo?: boolean
           location_id?: string | null
           notes?: string | null
+          request_id?: string | null
           school_id?: string | null
           source_id?: string | null
           stage?: Database["public"]["Enums"]["batch_stage"]
@@ -1164,6 +1243,7 @@ export type Database = {
           id: string
           is_demo: boolean
           name: string
+          school_id: string | null
         }
         Insert: {
           created_at?: string
@@ -1172,6 +1252,7 @@ export type Database = {
           id?: string
           is_demo?: boolean
           name: string
+          school_id?: string | null
         }
         Update: {
           created_at?: string
@@ -1180,8 +1261,17 @@ export type Database = {
           id?: string
           is_demo?: boolean
           name?: string
+          school_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "waste_sources_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       waste_types: {
         Row: {
@@ -1193,6 +1283,7 @@ export type Database = {
           is_demo: boolean
           name: string
           recyclable: boolean
+          school_id: string | null
         }
         Insert: {
           category: Database["public"]["Enums"]["waste_category"]
@@ -1203,6 +1294,7 @@ export type Database = {
           is_demo?: boolean
           name: string
           recyclable?: boolean
+          school_id?: string | null
         }
         Update: {
           category?: Database["public"]["Enums"]["waste_category"]
@@ -1213,8 +1305,17 @@ export type Database = {
           is_demo?: boolean
           name?: string
           recyclable?: boolean
+          school_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "waste_types_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       waste_utilization: {
         Row: {
@@ -1294,6 +1395,137 @@ export type Database = {
       }
       is_manager: { Args: { _user_id: string }; Returns: boolean }
       next_batch_code: { Args: never; Returns: string }
+      record_waste_generation: {
+        Args: {
+          p_category: Database["public"]["Enums"]["waste_category"]
+          p_location_id: string
+          p_notes?: string | null
+          p_photo_url?: string | null
+          p_recorded_at: string
+          p_school_id: string
+          p_source_id: string
+          p_waste_type_id?: string | null
+          p_weight_kg: number
+        }
+        Returns: { batch_code: string; batch_id: string; record_id: string }[]
+      }
+      record_waste_generation_v2: {
+        Args: {
+          p_category: Database["public"]["Enums"]["waste_category"]
+          p_location_id: string
+          p_notes?: string | null
+          p_photo_url?: string | null
+          p_recorded_at: string
+          p_request_id: string
+          p_school_id: string
+          p_source_id: string
+          p_waste_type_id?: string | null
+          p_weight_kg: number
+        }
+        Returns: { batch_code: string; batch_id: string; record_id: string }[]
+      }
+      record_waste_collection: {
+        Args: {
+          p_actual_weight_kg: number
+          p_batch_id: string
+          p_collected_at: string
+          p_estimated_weight_kg?: number | null
+          p_notes?: string | null
+          p_photo_url?: string | null
+        }
+        Returns: string
+      }
+      record_waste_sorting: {
+        Args: {
+          p_batch_id: string
+          p_items: Json
+          p_notes?: string | null
+          p_sorted_at?: string
+        }
+        Returns: number
+      }
+      record_waste_processing: {
+        Args: {
+          p_batch_id: string
+          p_input_weight_kg: number
+          p_method: Database["public"]["Enums"]["processing_method"]
+          p_notes?: string | null
+          p_output_weight_kg: number
+          p_photo_url?: string | null
+          p_processed_at?: string
+          p_responsible_name?: string | null
+          p_result?: string | null
+        }
+        Returns: string
+      }
+      record_waste_utilization: {
+        Args: {
+          p_batch_id: string
+          p_destination?: string | null
+          p_economic_value?: number
+          p_notes?: string | null
+          p_partner_id?: string | null
+          p_photo_url?: string | null
+          p_used_at?: string
+          p_utilization_type: string
+          p_weight_kg: number
+        }
+        Returns: string
+      }
+      record_waste_sale: {
+        Args: {
+          p_batch_id: string
+          p_notes?: string | null
+          p_partner_id?: string | null
+          p_payment_status?: Database["public"]["Enums"]["payment_status"]
+          p_price_per_kg: number
+          p_sold_at?: string
+          p_waste_type_id: string
+          p_weight_kg: number
+        }
+        Returns: { sale_id: string; total_value: number; transaction_code: string }[]
+      }
+      record_residual_disposal: {
+        Args: {
+          p_batch_id: string
+          p_destination: string
+          p_disposal_method: string
+          p_disposed_at?: string
+          p_notes?: string | null
+          p_photo_url?: string | null
+          p_transporter?: string | null
+          p_weight_kg: number
+        }
+        Returns: string
+      }
+      record_environmental_audit: {
+        Args: {
+          p_audited_at: string
+          p_auditor_name: string
+          p_location_id: string
+          p_notes?: string | null
+          p_photo_url?: string | null
+          p_school_id: string
+          p_scores: Json
+        }
+        Returns: { audit_id: string; total_score: number }[]
+      }
+      record_environmental_activity: {
+        Args: {
+          p_activity_date: string
+          p_description?: string | null
+          p_location_id?: string | null
+          p_name: string
+          p_organizer?: string | null
+          p_participants?: string[]
+          p_photo_url?: string | null
+          p_result?: string | null
+          p_school_id: string
+          p_waste_collected_kg?: number
+          p_waste_utilized_kg?: number
+        }
+        Returns: string
+      }
     }
     Enums: {
       app_role:

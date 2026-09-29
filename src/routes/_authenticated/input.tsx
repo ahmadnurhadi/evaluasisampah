@@ -1,0 +1,500 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
+import { Camera, LoaderCircle, Plus, Scale } from "lucide-react";
+import { toast } from "sonner";
+import { AppShell } from "@/components/app-shell";
+import { PhotoUpload } from "@/components/photo-upload";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useAuthProfile } from "@/hooks/use-auth";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  listQueuedWasteGeneration,
+  queueWasteGeneration,
+  removeQueuedWasteGeneration,
+  type WasteGenerationPayload,
+} from "@/lib/offline-waste-queue";
+import { CATEGORY_LABEL, CATEGORIES, STAGE_LABEL, fmtDateTime, fmtKg, type WasteCategory } from "@/lib/waste";
+
+export const Route = createFileRoute("/_authenticated/input")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    locationId: typeof search.locationId === "string" ? search.locationId : undefined,
+  }),
+  head: () => ({
+    meta: [
+      { title: "Input Sampah — Eco-School Waste Management" },
+      { name: "description", content: "Catat timbulan sampah dan buat batch traceability." },
+    ],
+  }),
+  component: WasteInput,
+});
+
+function localDateTime() {
+  return new Date(Date.now() - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
+}
+
+function WasteInput() {
+  const { user, roles, canRecord } = useAuthProfile();
+  const queryClient = useQueryClient();
+  const syncingRef = useRef(false);
+  const [isOnline, setIsOnline] = useState(true);
+  const [pendingCount, setPendingCount] = useState(0);
+  const [syncMessage, setSyncMessage] = useState("");
+  const search = Route.useSearch();
+  const isSuperAdmin = roles.includes("super_admin");
+  const profileSchoolId = user?.profile?.school_id ?? undefined;
+  const [schoolSelection, setSchoolSelection] = useState("");
+  const schoolId = isSuperAdmin ? schoolSelection || profileSchoolId : profileSchoolId;
+  const [locationId, setLocationId] = useState(search.locationId ?? "");
+  const [sourceId, setSourceId] = useState("");
+  const [category, setCategory] = useState<WasteCategory>("organic");
+  const [wasteTypeId, setWasteTypeId] = useState("");
+  const [weight, setWeight] = useState("");
+  const [recordedAt, setRecordedAt] = useState(localDateTime);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [notes, setNotes] = useState("");
+
+  const schoolsQuery = useQuery({
+    queryKey: ["waste-input-schools"],
+    enabled: isSuperAdmin,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("schools")
+        .select("id, name")
+        .is("deleted_at", null)
+        .order("name");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const locationsQuery = useQuery({
+    queryKey: ["waste-input-locations", schoolId],
+    enabled: Boolean(schoolId),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("locations")
+        .select("id, name")
+        .eq("school_id", schoolId!)
+        .is("deleted_at", null)
+        .order("name");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const sourcesQuery = useQuery({
+    queryKey: ["waste-input-sources"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("waste_sources")
+        .select("id, name")
+        .is("deleted_at", null)
+        .order("name");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const typesQuery = useQuery({
+    queryKey: ["waste-input-types", category],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("waste_types")
+        .select("id, name, category")
+        .eq("category", category)
+        .is("deleted_at", null)
+        .order("name");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const recentQuery = useQuery({
+    queryKey: ["recent-waste-records", schoolId],
+    enabled: Boolean(schoolId),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("waste_records")
+        .select("id, category, weight_kg, recorded_at, waste_batches(batch_code, stage)")
+        .eq("school_id", schoolId!)
+        .is("deleted_at", null)
+        .order("recorded_at", { ascending: false })
+        .limit(12);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  useEffect(() => {
+    if (!schoolSelection && profileSchoolId) setSchoolSelection(profileSchoolId);
+  }, [profileSchoolId, schoolSelection]);
+
+  useEffect(() => {
+    if (!locationId && search.locationId) setLocationId(search.locationId);
+  }, [locationId, search.locationId]);
+
+  useEffect(() => {
+    const userId = user?.userId;
+    if (!userId) return;
+    let active = true;
+
+    async function refreshPending() {
+      const queued = await listQueuedWasteGeneration(userId);
+      if (active) setPendingCount(queued.length);
+    }
+
+    async function syncPending() {
+      if (!navigator.onLine || syncingRef.current) return;
+      syncingRef.current = true;
+      setSyncMessage("");
+      try {
+        const queued = await listQueuedWasteGeneration(userId);
+        let synced = 0;
+        for (const entry of queued) {
+          const { error } = await supabase.rpc("record_waste_generation_v2", {
+            p_request_id: entry.requestId,
+            p_school_id: entry.schoolId,
+            p_location_id: entry.locationId,
+            p_source_id: entry.sourceId,
+            p_category: entry.category,
+            p_weight_kg: entry.weightKg,
+            p_recorded_at: entry.recordedAt,
+            p_waste_type_id: entry.wasteTypeId,
+            p_photo_url: entry.photoUrl,
+            p_notes: entry.notes,
+          });
+          if (error) {
+            setSyncMessage("Sebagian catatan belum tersinkron. Antrean akan dicoba lagi saat koneksi tersedia.");
+            break;
+          }
+          await removeQueuedWasteGeneration(entry.requestId);
+          synced += 1;
+        }
+        const remaining = await listQueuedWasteGeneration(userId);
+        if (active) setPendingCount(remaining.length);
+        if (synced) {
+          toast.success(`${synced} catatan offline berhasil disinkronkan.`);
+          await Promise.all([
+            queryClient.invalidateQueries({ queryKey: ["recent-waste-records", schoolId] }),
+            queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
+            queryClient.invalidateQueries({ queryKey: ["waste-batches"] }),
+          ]);
+        }
+      } catch {
+        if (active) setSyncMessage("Antrean offline tidak dapat dibaca. Data tersimpan di perangkat.");
+      } finally {
+        syncingRef.current = false;
+      }
+    }
+
+    const handleOnline = () => {
+      setIsOnline(true);
+      void syncPending();
+    };
+    const handleOffline = () => setIsOnline(false);
+    setIsOnline(navigator.onLine);
+    void refreshPending().then(() => syncPending());
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    return () => {
+      active = false;
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, [queryClient, schoolId, user?.userId]);
+
+  useEffect(() => {
+    if (wasteTypeId && !typesQuery.data?.some((item) => item.id === wasteTypeId)) {
+      setWasteTypeId("");
+    }
+  }, [typesQuery.data, wasteTypeId]);
+
+  const createRecord = useMutation({
+    mutationFn: async (): Promise<{ queued: boolean; batchCode?: string }> => {
+      if (!user?.userId || !schoolId || !locationId || !sourceId || !weight || !recordedAt) {
+        throw new Error("Lengkapi sekolah, lokasi, sumber, waktu, dan berat sampah.");
+      }
+      const payload: WasteGenerationPayload = {
+        requestId: crypto.randomUUID(),
+        userId: user.userId,
+        schoolId,
+        locationId,
+        sourceId,
+        category,
+        weightKg: Number(weight),
+        recordedAt: new Date(recordedAt).toISOString(),
+        wasteTypeId: wasteTypeId || null,
+        photoUrl,
+        notes: notes.trim() || null,
+      };
+      if (!Number.isFinite(payload.weightKg) || payload.weightKg <= 0) {
+        throw new Error("Berat sampah harus lebih besar dari nol.");
+      }
+      if (!navigator.onLine) {
+        await queueWasteGeneration(payload);
+        return { queued: true };
+      }
+      const { data, error } = await supabase.rpc("record_waste_generation_v2", {
+        p_request_id: payload.requestId,
+        p_school_id: payload.schoolId,
+        p_location_id: payload.locationId,
+        p_source_id: payload.sourceId,
+        p_category: payload.category,
+        p_weight_kg: payload.weightKg,
+        p_recorded_at: payload.recordedAt,
+        p_waste_type_id: payload.wasteTypeId,
+        p_photo_url: payload.photoUrl,
+        p_notes: payload.notes,
+      });
+      if (error) {
+        if (!navigator.onLine || error.message.toLowerCase().includes("fetch")) {
+          await queueWasteGeneration(payload);
+          return { queued: true };
+        }
+        throw error;
+      }
+      const created = data?.[0];
+      if (!created) throw new Error("Batch tidak berhasil dibuat.");
+      return { queued: false, batchCode: created.batch_code };
+    },
+    onSuccess: async (result) => {
+      if (result.queued) {
+        const queued = user?.userId ? await listQueuedWasteGeneration(user.userId) : [];
+        setPendingCount(queued.length);
+        toast.success("Catatan disimpan di perangkat dan akan disinkronkan saat online.");
+      } else {
+        toast.success(`Timbulan tercatat. ID batch ${result.batchCode}`);
+      }
+      setWeight("");
+      setPhotoUrl(null);
+      setNotes("");
+      setRecordedAt(localDateTime());
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["recent-waste-records", schoolId] }),
+        queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
+        queryClient.invalidateQueries({ queryKey: ["waste-batches"] }),
+      ]);
+    },
+    onError: (error) => toast.error(error.message || "Gagal mencatat timbulan."),
+  });
+
+  const queryFailed =
+    schoolsQuery.isError || locationsQuery.isError || sourcesQuery.isError || typesQuery.isError;
+
+  return (
+    <AppShell title="Input Sampah" description="Catat timbulan dan buat batch yang dapat ditelusuri">
+      {!isOnline || pendingCount > 0 || syncMessage ? (
+        <div role="status" className="eco-surface mb-4 flex flex-wrap items-center justify-between gap-2 p-3 text-sm">
+          <p>{!isOnline ? "Offline: catatan baru disimpan di perangkat." : pendingCount ? `${pendingCount} catatan menunggu sinkronisasi.` : syncMessage}</p>
+          {syncMessage ? <p className="text-xs text-muted-foreground">{syncMessage}</p> : null}
+        </div>
+      ) : null}
+      {queryFailed ? (
+        <div role="alert" className="eco-surface mb-4 p-4 text-sm">
+          Data formulir gagal dimuat. Periksa koneksi atau akses akun, lalu muat ulang halaman.
+        </div>
+      ) : null}
+
+      {!canRecord ? (
+        <div role="alert" className="eco-surface mb-4 p-4 text-sm">
+          Peran akun ini hanya dapat melihat data, bukan membuat catatan timbulan.
+        </div>
+      ) : null}
+
+      {!profileSchoolId && !isSuperAdmin ? (
+        <div role="alert" className="eco-surface mb-4 p-4 text-sm">
+          Akun belum terhubung ke sekolah. Minta administrator menetapkan sekolah sebelum mencatat data.
+        </div>
+      ) : null}
+
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(20rem,0.8fr)]">
+        {canRecord ? (
+          <form
+            className="eco-surface space-y-5 p-4 sm:p-6"
+            onSubmit={(event) => {
+              event.preventDefault();
+              createRecord.mutate();
+            }}
+          >
+            <div className="flex items-center gap-3 border-b border-border pb-4">
+              <span className="flex size-10 items-center justify-center rounded-lg bg-accent text-accent-foreground">
+                <Scale className="size-5" />
+              </span>
+              <div>
+                <h2 className="font-display text-base font-bold">Timbulan baru</h2>
+                <p className="text-xs text-muted-foreground">Batch dan riwayat awal dibuat otomatis.</p>
+              </div>
+            </div>
+
+            {isSuperAdmin ? (
+              <div className="space-y-2">
+                <Label htmlFor="school">Sekolah</Label>
+                <Select value={schoolId ?? ""} onValueChange={setSchoolSelection}>
+                  <SelectTrigger id="school"><SelectValue placeholder="Pilih sekolah" /></SelectTrigger>
+                  <SelectContent>
+                    {(schoolsQuery.data ?? []).map((school) => (
+                      <SelectItem key={school.id} value={school.id}>{school.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : null}
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="location">Lokasi</Label>
+                <Select value={locationId} onValueChange={setLocationId} disabled={!schoolId}>
+                  <SelectTrigger id="location"><SelectValue placeholder="Pilih lokasi" /></SelectTrigger>
+                  <SelectContent>
+                    {(locationsQuery.data ?? []).map((location) => (
+                      <SelectItem key={location.id} value={location.id}>{location.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="source">Sumber sampah</Label>
+                <Select value={sourceId} onValueChange={setSourceId}>
+                  <SelectTrigger id="source"><SelectValue placeholder="Pilih sumber" /></SelectTrigger>
+                  <SelectContent>
+                    {(sourcesQuery.data ?? []).map((source) => (
+                      <SelectItem key={source.id} value={source.id}>{source.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="category">Kategori</Label>
+                <Select value={category} onValueChange={(value) => setCategory(value as WasteCategory)}>
+                  <SelectTrigger id="category"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {CATEGORIES.map((value) => (
+                      <SelectItem key={value} value={value}>{CATEGORY_LABEL[value]}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="waste-type">Jenis sampah</Label>
+                <Select value={wasteTypeId || "none"} onValueChange={(value) => setWasteTypeId(value === "none" ? "" : value)}>
+                  <SelectTrigger id="waste-type"><SelectValue placeholder="Pilih jenis (opsional)" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Jenis belum ditentukan</SelectItem>
+                    {(typesQuery.data ?? []).map((type) => (
+                      <SelectItem key={type.id} value={type.id}>{type.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="weight">Berat aktual (kg)</Label>
+                <Input
+                  id="weight"
+                  type="number"
+                  inputMode="decimal"
+                  min="0.001"
+                  step="0.001"
+                  required
+                  value={weight}
+                  onChange={(event) => setWeight(event.target.value)}
+                  placeholder="0,000"
+                  className="h-12 text-lg"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="recorded-at">Tanggal dan waktu</Label>
+                <Input
+                  id="recorded-at"
+                  type="datetime-local"
+                  required
+                  value={recordedAt}
+                  onChange={(event) => setRecordedAt(event.target.value)}
+                  className="h-12"
+                />
+              </div>
+            </div>
+
+            <PhotoUpload value={photoUrl} onChange={setPhotoUrl} label="Foto bukti (opsional)" />
+
+            <div className="space-y-2">
+              <Label htmlFor="notes">Catatan</Label>
+              <textarea
+                id="notes"
+                value={notes}
+                onChange={(event) => setNotes(event.target.value)}
+                rows={3}
+                maxLength={1000}
+                className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                placeholder="Keterangan singkat"
+              />
+            </div>
+
+            <Button
+              type="submit"
+              size="lg"
+              className="h-12 w-full sm:w-auto"
+              disabled={!canRecord || !schoolId || createRecord.isPending || queryFailed}
+            >
+              {createRecord.isPending ? <LoaderCircle className="animate-spin" /> : <Plus />}
+              Simpan dan buat batch
+            </Button>
+          </form>
+        ) : null}
+
+        <section className="eco-surface min-w-0 p-4 sm:p-6">
+          <div className="flex items-center justify-between gap-3 border-b border-border pb-4">
+            <div>
+              <h2 className="font-display text-base font-bold">Catatan terbaru</h2>
+              <p className="text-xs text-muted-foreground">Timbulan dan batch di sekolah terpilih</p>
+            </div>
+            <Camera className="size-5 text-muted-foreground" />
+          </div>
+
+          {!schoolId ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">Sekolah belum dipilih.</p>
+          ) : recentQuery.isLoading ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">Memuat catatan...</p>
+          ) : recentQuery.isError ? (
+            <p role="alert" className="py-8 text-center text-sm text-destructive">Catatan gagal dimuat.</p>
+          ) : recentQuery.data?.length ? (
+            <div className="divide-y divide-border">
+              {recentQuery.data.map((record) => {
+                const batch = Array.isArray(record.waste_batches)
+                  ? record.waste_batches[0]
+                  : record.waste_batches;
+                return (
+                  <div key={record.id} className="flex items-start justify-between gap-3 py-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold">{batch?.batch_code ?? "Batch belum tersedia"}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {CATEGORY_LABEL[record.category]} · {fmtDateTime(record.recorded_at)}
+                      </p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p className="text-sm font-semibold">{fmtKg(Number(record.weight_kg))}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {batch?.stage ? STAGE_LABEL[batch.stage] : "Timbulan"}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="py-8 text-center text-sm text-muted-foreground">Belum ada timbulan yang tercatat.</p>
+          )}
+        </section>
+      </div>
+    </AppShell>
+  );
+}

@@ -24,3 +24,34 @@ cd <repository-name>
 npm i
 npm run dev
 ```
+
+## Database Setup
+
+The application uses Supabase PostgreSQL. Set `LOVABLE_DB_MIGRATION_URL` to a
+database connection string in the local environment, then apply the checked-in
+Drizzle migrations:
+
+```powershell
+$env:LOVABLE_DB_MIGRATION_URL = "<database-connection-string>"
+bun run db:migrate
+```
+
+Never commit the connection string. Configure the client-side Supabase URL and
+publishable key using the deployment environment's `VITE_SUPABASE_URL` and
+`VITE_SUPABASE_PUBLISHABLE_KEY` settings.
+
+Public signup creates a `teacher` account. To bootstrap the first super admin,
+first create and confirm the account through the app, then run this once in the
+Supabase SQL editor using that account's email:
+
+```sql
+INSERT INTO public.user_roles (user_id, role)
+SELECT id, 'super_admin'::public.app_role
+FROM auth.users
+WHERE email = 'admin@example.org'
+ON CONFLICT (user_id, role) DO NOTHING;
+```
+
+School administrators can then assign roles to users already attached to their
+school. A user must be assigned a school through `profiles.school_id` before
+they can record school data.

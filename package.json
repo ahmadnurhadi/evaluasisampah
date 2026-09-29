@@ -9,6 +9,7 @@
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "lint": "eslint .",
+    "db:migrate": "drizzle-kit migrate",
     "format": "prettier --write ."
   },
   "overrides": {
