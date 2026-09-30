@@ -50,8 +50,7 @@ export const NAV_ITEMS: NavItem[] = [
   { to: "/settings", label: "Pengguna dan Akses", icon: Settings, permission: "manager" },
 ];
 
-function NavLinks({ onNavigate, canRecord, isManager }: { onNavigate?: () => void; canRecord: boolean; isManager: boolean }) {
-  function NavLinks({ onNavigate, canRecord, isManager, roles }: { onNavigate?: () => void; canRecord: boolean; isManager: boolean; roles: ReturnType<typeof useAuthProfile>["roles"] }) {
+function NavLinks({ onNavigate, canRecord, isManager, roles }: { onNavigate?: () => void; canRecord: boolean; isManager: boolean; roles: ReturnType<typeof useAuthProfile>["roles"] }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   return (
     <nav className="flex flex-col gap-1 p-3">
