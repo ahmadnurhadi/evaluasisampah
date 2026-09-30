@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuthProfile } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
+import { invalidateWasteQueries } from "@/lib/query-invalidation";
 import {
   listQueuedWasteGeneration,
   queueWasteGeneration,
@@ -178,11 +179,7 @@ function WasteInput() {
         if (active) setPendingCount(remaining.length);
         if (synced) {
           toast.success(`${synced} catatan offline berhasil disinkronkan.`);
-          await Promise.all([
-            queryClient.invalidateQueries({ queryKey: ["recent-waste-records", schoolId] }),
-            queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
-            queryClient.invalidateQueries({ queryKey: ["waste-batches"] }),
-          ]);
+          await invalidateWasteQueries(queryClient);
         }
       } catch {
         if (active) setSyncMessage("Antrean offline tidak dapat dibaca. Data tersimpan di perangkat.");
@@ -273,11 +270,7 @@ function WasteInput() {
       setPhotoUrl(null);
       setNotes("");
       setRecordedAt(localDateTime());
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["recent-waste-records", schoolId] }),
-        queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
-        queryClient.invalidateQueries({ queryKey: ["waste-batches"] }),
-      ]);
+      await invalidateWasteQueries(queryClient);
     },
     onError: (error) => toast.error(error.message || "Gagal mencatat timbulan."),
   });

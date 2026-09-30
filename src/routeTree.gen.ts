@@ -12,7 +12,22 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedActivitiesRouteImport } from './routes/_authenticated/activities'
+import { Route as AuthenticatedAuditsRouteImport } from './routes/_authenticated/audits'
+import { Route as AuthenticatedBatchesRouteImport } from './routes/_authenticated/batches'
+import { Route as AuthenticatedCollectionRouteImport } from './routes/_authenticated/collection'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedFindingsRouteImport } from './routes/_authenticated/findings'
+import { Route as AuthenticatedInputRouteImport } from './routes/_authenticated/input'
+import { Route as AuthenticatedMasterDataRouteImport } from './routes/_authenticated/master-data'
+import { Route as AuthenticatedProcessingRouteImport } from './routes/_authenticated/processing'
+import { Route as AuthenticatedQrRouteImport } from './routes/_authenticated/qr'
+import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
+import { Route as AuthenticatedResidualRouteImport } from './routes/_authenticated/residual'
+import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedSortingRouteImport } from './routes/_authenticated/sorting'
+import { Route as AuthenticatedUtilizationRouteImport } from './routes/_authenticated/utilization'
+import { Route as AuthenticatedWasteBankRouteImport } from './routes/_authenticated/waste-bank'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -28,36 +43,212 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedActivitiesRoute = AuthenticatedActivitiesRouteImport.update({
+  id: '/activities',
+  path: '/activities',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAuditsRoute = AuthenticatedAuditsRouteImport.update({
+  id: '/audits',
+  path: '/audits',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedBatchesRoute = AuthenticatedBatchesRouteImport.update({
+  id: '/batches',
+  path: '/batches',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedCollectionRoute = AuthenticatedCollectionRouteImport.update({
+  id: '/collection',
+  path: '/collection',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedFindingsRoute = AuthenticatedFindingsRouteImport.update({
+  id: '/findings',
+  path: '/findings',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedInputRoute = AuthenticatedInputRouteImport.update({
+  id: '/input',
+  path: '/input',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedMasterDataRoute = AuthenticatedMasterDataRouteImport.update({
+  id: '/master-data',
+  path: '/master-data',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedProcessingRoute = AuthenticatedProcessingRouteImport.update({
+  id: '/processing',
+  path: '/processing',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedQrRoute = AuthenticatedQrRouteImport.update({
+  id: '/qr',
+  path: '/qr',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedReportsRoute = AuthenticatedReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedResidualRoute = AuthenticatedResidualRouteImport.update({
+  id: '/residual',
+  path: '/residual',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedSortingRoute = AuthenticatedSortingRouteImport.update({
+  id: '/sorting',
+  path: '/sorting',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedUtilizationRoute =
+  AuthenticatedUtilizationRouteImport.update({
+    id: '/utilization',
+    path: '/utilization',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedWasteBankRoute = AuthenticatedWasteBankRouteImport.update({
+  id: '/waste-bank',
+  path: '/waste-bank',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/activities': typeof AuthenticatedActivitiesRoute
+  '/audits': typeof AuthenticatedAuditsRoute
+  '/batches': typeof AuthenticatedBatchesRoute
+  '/collection': typeof AuthenticatedCollectionRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/findings': typeof AuthenticatedFindingsRoute
+  '/input': typeof AuthenticatedInputRoute
+  '/master-data': typeof AuthenticatedMasterDataRoute
+  '/processing': typeof AuthenticatedProcessingRoute
+  '/qr': typeof AuthenticatedQrRoute
+  '/reports': typeof AuthenticatedReportsRoute
+  '/residual': typeof AuthenticatedResidualRoute
+  '/settings': typeof AuthenticatedSettingsRoute
+  '/sorting': typeof AuthenticatedSortingRoute
+  '/utilization': typeof AuthenticatedUtilizationRoute
+  '/waste-bank': typeof AuthenticatedWasteBankRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/activities': typeof AuthenticatedActivitiesRoute
+  '/audits': typeof AuthenticatedAuditsRoute
+  '/batches': typeof AuthenticatedBatchesRoute
+  '/collection': typeof AuthenticatedCollectionRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/findings': typeof AuthenticatedFindingsRoute
+  '/input': typeof AuthenticatedInputRoute
+  '/master-data': typeof AuthenticatedMasterDataRoute
+  '/processing': typeof AuthenticatedProcessingRoute
+  '/qr': typeof AuthenticatedQrRoute
+  '/reports': typeof AuthenticatedReportsRoute
+  '/residual': typeof AuthenticatedResidualRoute
+  '/settings': typeof AuthenticatedSettingsRoute
+  '/sorting': typeof AuthenticatedSortingRoute
+  '/utilization': typeof AuthenticatedUtilizationRoute
+  '/waste-bank': typeof AuthenticatedWasteBankRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/activities': typeof AuthenticatedActivitiesRoute
+  '/_authenticated/audits': typeof AuthenticatedAuditsRoute
+  '/_authenticated/batches': typeof AuthenticatedBatchesRoute
+  '/_authenticated/collection': typeof AuthenticatedCollectionRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/findings': typeof AuthenticatedFindingsRoute
+  '/_authenticated/input': typeof AuthenticatedInputRoute
+  '/_authenticated/master-data': typeof AuthenticatedMasterDataRoute
+  '/_authenticated/processing': typeof AuthenticatedProcessingRoute
+  '/_authenticated/qr': typeof AuthenticatedQrRoute
+  '/_authenticated/reports': typeof AuthenticatedReportsRoute
+  '/_authenticated/residual': typeof AuthenticatedResidualRoute
+  '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/sorting': typeof AuthenticatedSortingRoute
+  '/_authenticated/utilization': typeof AuthenticatedUtilizationRoute
+  '/_authenticated/waste-bank': typeof AuthenticatedWasteBankRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/dashboard'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/activities'
+    | '/audits'
+    | '/batches'
+    | '/collection'
+    | '/dashboard'
+    | '/findings'
+    | '/input'
+    | '/master-data'
+    | '/processing'
+    | '/qr'
+    | '/reports'
+    | '/residual'
+    | '/settings'
+    | '/sorting'
+    | '/utilization'
+    | '/waste-bank'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/dashboard'
+  to:
+    | '/'
+    | '/auth'
+    | '/activities'
+    | '/audits'
+    | '/batches'
+    | '/collection'
+    | '/dashboard'
+    | '/findings'
+    | '/input'
+    | '/master-data'
+    | '/processing'
+    | '/qr'
+    | '/reports'
+    | '/residual'
+    | '/settings'
+    | '/sorting'
+    | '/utilization'
+    | '/waste-bank'
   id:
-    '__root__' | '/' | '/_authenticated' | '/auth' | '/_authenticated/dashboard'
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/auth'
+    | '/_authenticated/activities'
+    | '/_authenticated/audits'
+    | '/_authenticated/batches'
+    | '/_authenticated/collection'
+    | '/_authenticated/dashboard'
+    | '/_authenticated/findings'
+    | '/_authenticated/input'
+    | '/_authenticated/master-data'
+    | '/_authenticated/processing'
+    | '/_authenticated/qr'
+    | '/_authenticated/reports'
+    | '/_authenticated/residual'
+    | '/_authenticated/settings'
+    | '/_authenticated/sorting'
+    | '/_authenticated/utilization'
+    | '/_authenticated/waste-bank'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -89,6 +280,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/activities': {
+      id: '/_authenticated/activities'
+      path: '/activities'
+      fullPath: '/activities'
+      preLoaderRoute: typeof AuthenticatedActivitiesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/audits': {
+      id: '/_authenticated/audits'
+      path: '/audits'
+      fullPath: '/audits'
+      preLoaderRoute: typeof AuthenticatedAuditsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/batches': {
+      id: '/_authenticated/batches'
+      path: '/batches'
+      fullPath: '/batches'
+      preLoaderRoute: typeof AuthenticatedBatchesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/collection': {
+      id: '/_authenticated/collection'
+      path: '/collection'
+      fullPath: '/collection'
+      preLoaderRoute: typeof AuthenticatedCollectionRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -96,15 +315,122 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/findings': {
+      id: '/_authenticated/findings'
+      path: '/findings'
+      fullPath: '/findings'
+      preLoaderRoute: typeof AuthenticatedFindingsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/input': {
+      id: '/_authenticated/input'
+      path: '/input'
+      fullPath: '/input'
+      preLoaderRoute: typeof AuthenticatedInputRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/master-data': {
+      id: '/_authenticated/master-data'
+      path: '/master-data'
+      fullPath: '/master-data'
+      preLoaderRoute: typeof AuthenticatedMasterDataRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/processing': {
+      id: '/_authenticated/processing'
+      path: '/processing'
+      fullPath: '/processing'
+      preLoaderRoute: typeof AuthenticatedProcessingRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/qr': {
+      id: '/_authenticated/qr'
+      path: '/qr'
+      fullPath: '/qr'
+      preLoaderRoute: typeof AuthenticatedQrRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/reports': {
+      id: '/_authenticated/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof AuthenticatedReportsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/residual': {
+      id: '/_authenticated/residual'
+      path: '/residual'
+      fullPath: '/residual'
+      preLoaderRoute: typeof AuthenticatedResidualRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/settings': {
+      id: '/_authenticated/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/sorting': {
+      id: '/_authenticated/sorting'
+      path: '/sorting'
+      fullPath: '/sorting'
+      preLoaderRoute: typeof AuthenticatedSortingRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/utilization': {
+      id: '/_authenticated/utilization'
+      path: '/utilization'
+      fullPath: '/utilization'
+      preLoaderRoute: typeof AuthenticatedUtilizationRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/waste-bank': {
+      id: '/_authenticated/waste-bank'
+      path: '/waste-bank'
+      fullPath: '/waste-bank'
+      preLoaderRoute: typeof AuthenticatedWasteBankRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedActivitiesRoute: typeof AuthenticatedActivitiesRoute
+  AuthenticatedAuditsRoute: typeof AuthenticatedAuditsRoute
+  AuthenticatedBatchesRoute: typeof AuthenticatedBatchesRoute
+  AuthenticatedCollectionRoute: typeof AuthenticatedCollectionRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedFindingsRoute: typeof AuthenticatedFindingsRoute
+  AuthenticatedInputRoute: typeof AuthenticatedInputRoute
+  AuthenticatedMasterDataRoute: typeof AuthenticatedMasterDataRoute
+  AuthenticatedProcessingRoute: typeof AuthenticatedProcessingRoute
+  AuthenticatedQrRoute: typeof AuthenticatedQrRoute
+  AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
+  AuthenticatedResidualRoute: typeof AuthenticatedResidualRoute
+  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedSortingRoute: typeof AuthenticatedSortingRoute
+  AuthenticatedUtilizationRoute: typeof AuthenticatedUtilizationRoute
+  AuthenticatedWasteBankRoute: typeof AuthenticatedWasteBankRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedActivitiesRoute: AuthenticatedActivitiesRoute,
+  AuthenticatedAuditsRoute: AuthenticatedAuditsRoute,
+  AuthenticatedBatchesRoute: AuthenticatedBatchesRoute,
+  AuthenticatedCollectionRoute: AuthenticatedCollectionRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedFindingsRoute: AuthenticatedFindingsRoute,
+  AuthenticatedInputRoute: AuthenticatedInputRoute,
+  AuthenticatedMasterDataRoute: AuthenticatedMasterDataRoute,
+  AuthenticatedProcessingRoute: AuthenticatedProcessingRoute,
+  AuthenticatedQrRoute: AuthenticatedQrRoute,
+  AuthenticatedReportsRoute: AuthenticatedReportsRoute,
+  AuthenticatedResidualRoute: AuthenticatedResidualRoute,
+  AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedSortingRoute: AuthenticatedSortingRoute,
+  AuthenticatedUtilizationRoute: AuthenticatedUtilizationRoute,
+  AuthenticatedWasteBankRoute: AuthenticatedWasteBankRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

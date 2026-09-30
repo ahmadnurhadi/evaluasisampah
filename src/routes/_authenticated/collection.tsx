@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuthProfile } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
+import { invalidateWasteQueries } from "@/lib/query-invalidation";
 import { STAGE_LABEL, fmtDateTime, fmtKg } from "@/lib/waste";
 
 export const Route = createFileRoute("/_authenticated/collection")({
@@ -100,12 +101,7 @@ function CollectionPage() {
       setCollectedAt(localDateTime());
       setPhotoUrl(null);
       setNotes("");
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["collectable-batches", schoolId, isSuperAdmin] }),
-        queryClient.invalidateQueries({ queryKey: ["recent-collections", schoolId, isSuperAdmin] }),
-        queryClient.invalidateQueries({ queryKey: ["waste-batches"] }),
-        queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
-      ]);
+      await invalidateWasteQueries(queryClient);
     },
     onError: (error) => toast.error(error.message || "Gagal mencatat pengumpulan."),
   });

@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuthProfile } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
+import { invalidateMasterDataQueries } from "@/lib/query-invalidation";
 import { CATEGORY_LABEL, CATEGORIES, type WasteCategory } from "@/lib/waste";
 
 export const Route = createFileRoute("/_authenticated/master-data")({
@@ -181,8 +182,7 @@ function MasterDataPage() {
     toast.success(editingId ? "Data diperbarui." : "Data ditambahkan.");
     setEditingId("");
     setValues({});
-    await queryClient.invalidateQueries({ queryKey: ["master-records", section] });
-    await queryClient.invalidateQueries({ queryKey: ["master-school-options"] });
+    await invalidateMasterDataQueries(queryClient);
   }
 
   async function archiveRecord(id: string) {
@@ -196,7 +196,7 @@ function MasterDataPage() {
     else error = (await supabase.from("schools").update({ deleted_at: new Date().toISOString() }).eq("id", id)).error;
     if (error) return toast.error(error.message);
     toast.success("Data diarsipkan.");
-    await queryClient.invalidateQueries({ queryKey: ["master-records", section] });
+    await invalidateMasterDataQueries(queryClient);
   }
 
   const rows = recordsQuery.data ?? [];

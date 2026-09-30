@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuthProfile } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
+import { invalidateWasteQueries } from "@/lib/query-invalidation";
 import { CATEGORY_LABEL, CATEGORIES, fmtKg, type WasteCategory } from "@/lib/waste";
 
 export const Route = createFileRoute("/_authenticated/sorting")({
@@ -122,11 +123,7 @@ function SortingPage() {
       setBatchId("");
       setLines([EMPTY_LINE()]);
       setNotes("");
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["sortable-batches", schoolId] }),
-        queryClient.invalidateQueries({ queryKey: ["waste-batches"] }),
-        queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
-      ]);
+      await invalidateWasteQueries(queryClient);
     },
     onError: (error) => toast.error(error.message || "Gagal menyimpan hasil pilahan."),
   });

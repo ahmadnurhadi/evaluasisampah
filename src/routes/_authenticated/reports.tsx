@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuthProfile } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { CATEGORY_LABEL, fmtDateTime, fmtKg, fmtPct, fmtRp, type WasteCategory } from "@/lib/waste";

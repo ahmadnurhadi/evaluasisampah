@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuthProfile } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
+import { invalidateAuditQueries } from "@/lib/query-invalidation";
 import { FINDING_STATUS_LABEL, SEVERITY_LABEL, fmtDate, type FindingStatus, type Severity } from "@/lib/waste";
 
 export const Route = createFileRoute("/_authenticated/findings")({
@@ -79,7 +80,7 @@ function FindingsPage() {
     queryKey: ["audit-findings", activeSchoolId],
     enabled: Boolean(activeSchoolId) || isSuperAdmin,
     queryFn: async () => {
-      let request = supabase.from("audit_findings")
+      const request = supabase.from("audit_findings")
         .select("id, finding_code, category, description, severity, recommendation, pic_name, due_date, status, created_at, audit_id, audits(school_id), locations(name, school_id), action_plans(id, action, pic_name, due_date, status)")
         .is("deleted_at", null).order("created_at", { ascending: false }).limit(100);
       const { data, error } = await request;
@@ -113,7 +114,7 @@ function FindingsPage() {
     onSuccess: async () => {
       toast.success("Temuan audit tersimpan.");
       setDescription(""); setRecommendation(""); setPicName(""); setDueDate(""); setPhotoUrl(null);
-      await queryClient.invalidateQueries({ queryKey: ["audit-findings", activeSchoolId] });
+      await invalidateAuditQueries(queryClient);
     },
     onError: (error) => toast.error(error.message || "Gagal menyimpan temuan."),
   });
@@ -132,7 +133,7 @@ function FindingsPage() {
     onSuccess: async () => {
       toast.success("Rencana aksi tersimpan.");
       setPlanAction(""); setPlanPic(""); setPlanDueDate("");
-      await queryClient.invalidateQueries({ queryKey: ["audit-findings", activeSchoolId] });
+      await invalidateAuditQueries(queryClient);
     },
     onError: (error) => toast.error(error.message || "Gagal menyimpan rencana aksi."),
   });
@@ -142,7 +143,7 @@ function FindingsPage() {
       const { error } = await supabase.from("audit_findings").update({ status }).eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["audit-findings", activeSchoolId] }),
+    onSuccess: () => invalidateAuditQueries(queryClient),
     onError: (error) => toast.error(error.message || "Status temuan gagal diperbarui."),
   });
   const updatePlanStatus = useMutation({
@@ -150,7 +151,7 @@ function FindingsPage() {
       const { error } = await supabase.from("action_plans").update({ status, completed_at: status === "resolved" || status === "verified" ? new Date().toISOString() : null }).eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["audit-findings", activeSchoolId] }),
+    onSuccess: () => invalidateAuditQueries(queryClient),
     onError: (error) => toast.error(error.message || "Status rencana aksi gagal diperbarui."),
   });
 

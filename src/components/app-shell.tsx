@@ -1,7 +1,8 @@
-import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate, useRouter, useRouterState } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
 import {
+  ArrowLeft,
   LayoutDashboard,
   PlusCircle,
   Truck,
@@ -108,8 +109,14 @@ export function AppShell({
 }) {
   const { user, roles, canRecord, isManager } = useAuthProfile();
   const navigate = useNavigate();
+  const router = useRouter();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
+
+  function handleBack() {
+    if (router.history.canGoBack()) router.history.back();
+    else navigate({ to: "/dashboard" });
+  }
 
   async function handleSignOut() {
     await queryClient.cancelQueries();
@@ -138,6 +145,9 @@ export function AppShell({
 
       <div className="lg:pl-64">
         <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-border bg-background/85 px-4 py-3 backdrop-blur">
+          <Button variant="ghost" size="icon" className="shrink-0" aria-label="Kembali" title="Kembali" onClick={handleBack}>
+            <ArrowLeft className="size-5" />
+          </Button>
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
               <Button variant="outline" size="icon" className="lg:hidden" aria-label="Buka menu">

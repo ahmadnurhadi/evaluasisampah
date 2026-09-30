@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuthProfile } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
+import { invalidateUserQueries } from "@/lib/query-invalidation";
 import { ROLE_LABEL, type AppRole } from "@/lib/waste";
 
 export const Route = createFileRoute("/_authenticated/settings")({
@@ -88,7 +89,7 @@ function SettingsPage() {
     if (error) return toast.error(error.message);
     toast.success("Akun berhasil dihubungkan ke sekolah.");
     setSchoolSelection(schoolToAssign);
-    await queryClient.invalidateQueries({ queryKey: ["managed-users"] });
+    await invalidateUserQueries(queryClient);
   }
 
   async function addRole() {
@@ -99,8 +100,7 @@ function SettingsPage() {
     if (error) return toast.error(error.message);
     toast.success(`Peran ${ROLE_LABEL[roleToAdd]} ditambahkan.`);
     setRoleToAdd("");
-    await queryClient.invalidateQueries({ queryKey: ["managed-users"] });
-    await queryClient.invalidateQueries({ queryKey: ["auth-profile"] });
+    await invalidateUserQueries(queryClient);
   }
 
   async function removeRole(roleId: string, role: AppRole) {
@@ -110,8 +110,7 @@ function SettingsPage() {
     setSaving(false);
     if (error) return toast.error(error.message);
     toast.success(`Peran ${ROLE_LABEL[role]} dihapus.`);
-    await queryClient.invalidateQueries({ queryKey: ["managed-users"] });
-    await queryClient.invalidateQueries({ queryKey: ["auth-profile"] });
+    await invalidateUserQueries(queryClient);
   }
 
   return (

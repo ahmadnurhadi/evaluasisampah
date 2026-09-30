@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuthProfile } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
+import { invalidateAuditQueries } from "@/lib/query-invalidation";
 import { fmtDate, fmtPct } from "@/lib/waste";
 
 export const Route = createFileRoute("/_authenticated/audits")({
@@ -124,7 +125,7 @@ function AuditsPage() {
       setScoreNotes({});
       setNotes("");
       setPhotoUrl(null);
-      await queryClient.invalidateQueries({ queryKey: ["environmental-audits", schoolId] });
+      await invalidateAuditQueries(queryClient);
     },
     onError: (error) => toast.error(error.message || "Gagal menyimpan audit."),
   });
@@ -133,7 +134,7 @@ function AuditsPage() {
       const { error } = await supabase.from("audits").update({ deleted_at: new Date().toISOString() }).eq("id", auditId);
       if (error) throw error;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["environmental-audits", schoolId] }),
+    onSuccess: () => invalidateAuditQueries(queryClient),
     onError: (error) => toast.error(error.message || "Audit gagal diarsipkan."),
   });
 

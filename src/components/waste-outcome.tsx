@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuthProfile } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
+import { invalidateWasteQueries } from "@/lib/query-invalidation";
 import {
   CATEGORY_LABEL,
   METHOD_LABEL,
@@ -262,12 +263,7 @@ export function WasteOutcomePage({ kind }: { kind: WasteOutcomeKind }) {
     onSuccess: async () => {
       toast.success(`Catatan ${definition.noun} tersimpan.`);
       setForm(initialForm());
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["outcome-records", kind, schoolId] }),
-        queryClient.invalidateQueries({ queryKey: ["outcome-batches", kind, schoolId] }),
-        queryClient.invalidateQueries({ queryKey: ["waste-batches"] }),
-        queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
-      ]);
+      await invalidateWasteQueries(queryClient);
     },
     onError: (error) => toast.error(error.message || `Gagal menyimpan ${definition.noun}.`),
   });

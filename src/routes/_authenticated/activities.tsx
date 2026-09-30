@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuthProfile } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
+import { invalidateActivityQueries } from "@/lib/query-invalidation";
 import { fmtDate, fmtKg } from "@/lib/waste";
 
 export const Route = createFileRoute("/_authenticated/activities")({
@@ -104,7 +105,7 @@ function ActivitiesPage() {
       toast.success("Kegiatan lingkungan tersimpan.");
       setName(""); setParticipants(""); setWasteCollected("0"); setWasteUtilized("0");
       setDescription(""); setResult(""); setPhotoUrl(null);
-      await queryClient.invalidateQueries({ queryKey: ["environmental-activities", schoolId] });
+      await invalidateActivityQueries(queryClient);
     },
     onError: (error) => toast.error(error.message || "Gagal menyimpan kegiatan."),
   });
@@ -116,7 +117,7 @@ function ActivitiesPage() {
     },
     onSuccess: () => {
       toast.success("Hasil kegiatan diperbarui.");
-      return queryClient.invalidateQueries({ queryKey: ["environmental-activities", schoolId] });
+      return invalidateActivityQueries(queryClient);
     },
     onError: (error) => toast.error(error.message || "Hasil kegiatan gagal diperbarui."),
   });
@@ -126,7 +127,7 @@ function ActivitiesPage() {
       const { error } = await supabase.from("activities").update({ deleted_at: new Date().toISOString() }).eq("id", activityId);
       if (error) throw error;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["environmental-activities", schoolId] }),
+    onSuccess: () => invalidateActivityQueries(queryClient),
     onError: (error) => toast.error(error.message || "Kegiatan gagal diarsipkan."),
   });
 
