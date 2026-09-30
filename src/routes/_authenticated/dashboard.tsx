@@ -181,6 +181,11 @@ function Dashboard() {
         </div>
       ) : (
         <>
+          {data.source === "demo" ? (
+            <div role="status" className="mb-4 border-l-4 border-amber-500 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+              Database belum memiliki tabel yang diperlukan. Ini contoh lokal dari 6 catatan; terapkan migrasi Supabase untuk memakai data asli.
+            </div>
+          ) : null}
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <Kpi label="Sampah dihasilkan" value={fmtKg(data.totalGenerated)} />
             <Kpi label="Organik" value={fmtKg(data.organic)} />

@@ -9,7 +9,155 @@ export type DashboardFilters = {
   sourceId?: string;
 };
 
-export type DashboardData = Awaited<ReturnType<typeof fetchDashboard>>;
+type DashboardMetrics = {
+  totalGenerated: number;
+  organic: number;
+  inorganic: number;
+  b3: number;
+  residualGenerated: number;
+  processed: number;
+  organicProcessed: number;
+  recycled: number;
+  utilized: number;
+  sold: number;
+  disposed: number;
+  revenue: number;
+  economicValue: number;
+  kpi: {
+    diversionRate: number;
+    recyclingRate: number;
+    organicProcessingRate: number;
+    residualRate: number;
+    reductionRate: number;
+    prevTotal: number;
+  };
+  composition: { category: WasteCategory; weight: number }[];
+  bySource: { name: string; weight: number }[];
+  trend: { date: string; weight: number }[];
+  utilization: { name: string; weight: number }[];
+};
+
+export type DashboardData = DashboardMetrics & { source: "database" | "demo" };
+
+function isMissingDatabaseSchema(error: unknown) {
+  if (typeof error !== "object" || error === null) return false;
+  const code = "code" in error ? String(error.code) : "";
+  const message = "message" in error ? String(error.message) : "";
+  return code === "PGRST205" || code === "42P01" || /schema cache|could not find the table|does not exist/i.test(message);
+}
+
+function isWithinDateRange(value: string, filters: DashboardFilters) {
+  const date = value.slice(0, 10);
+  return date >= filters.from && date <= filters.to;
+}
+
+export function createDemoDashboard(filters: DashboardFilters): DashboardData {
+  const demoLocationId = "demo-location";
+  const demoSourceId = "demo-source";
+  const now = Date.now();
+  const records = [
+    { category: "organic", weight_kg: 12, daysAgo: 6 },
+    { category: "plastic", weight_kg: 8, daysAgo: 5 },
+    { category: "paper", weight_kg: 5, daysAgo: 4 },
+    { category: "residual", weight_kg: 3.2, daysAgo: 3 },
+    { category: "organic", weight_kg: 9, daysAgo: 2 },
+    { category: "cardboard", weight_kg: 7, daysAgo: 1 },
+  ].map((record) => ({
+    ...record,
+    recorded_at: new Date(now - record.daysAgo * 86400000).toISOString(),
+    location_id: demoLocationId,
+    source_id: demoSourceId,
+  })).filter((record) =>
+    isWithinDateRange(record.recorded_at, filters)
+    && (!filters.locationId || filters.locationId === demoLocationId)
+    && (!filters.sourceId || filters.sourceId === demoSourceId)
+    && (!filters.category || record.category === filters.category),
+  );
+  const processingRows = [
+    { input_weight_kg: 10, output_weight_kg: 3.2, method: "composting", daysAgo: 4 },
+    { input_weight_kg: 8, output_weight_kg: 3, method: "eco_enzyme", daysAgo: 1 },
+    { input_weight_kg: 6, output_weight_kg: 4, method: "recycling", daysAgo: 0 },
+  ].filter((row) => isWithinDateRange(new Date(now - row.daysAgo * 86400000).toISOString(), filters));
+  const utilizationRows = [
+    { weight_kg: 2, economic_value: 25000, daysAgo: 3 },
+    { weight_kg: 2, economic_value: 15000, daysAgo: 0 },
+  ].filter((row) => isWithinDateRange(new Date(now - row.daysAgo * 86400000).toISOString(), filters));
+  const salesRows = [
+    { weight_kg: 6.5, total_value: 52000, daysAgo: 3 },
+    { weight_kg: 4, total_value: 10000, daysAgo: 2 },
+  ].filter((row) => isWithinDateRange(new Date(now - row.daysAgo * 86400000).toISOString(), filters));
+  const residualRows = [{ weight_kg: 2.5, daysAgo: 1 }]
+    .filter((row) => isWithinDateRange(new Date(now - row.daysAgo * 86400000).toISOString(), filters));
+
+  const sum = (rows: { weight_kg: number }[]) => rows.reduce((total, row) => total + row.weight_kg, 0);
+  const totalGenerated = sum(records);
+  const byCategory = new Map<string, number>();
+  for (const record of records) {
+    byCategory.set(record.category, (byCategory.get(record.category) ?? 0) + record.weight_kg);
+  }
+  const organic = byCategory.get("organic") ?? 0;
+  const inorganic = INORGANIC.reduce((total, category) => total + (byCategory.get(category) ?? 0), 0);
+  const b3 = byCategory.get("b3") ?? 0;
+  const residualGenerated = byCategory.get("residual") ?? 0;
+  const processed = processingRows.reduce((total, row) => total + row.input_weight_kg, 0);
+  const organicProcessed = processingRows
+    .filter((row) => row.method === "composting" || row.method === "eco_enzyme")
+    .reduce((total, row) => total + row.input_weight_kg, 0);
+  const recycled = processingRows
+    .filter((row) => row.method === "recycling" || row.method === "upcycling")
+    .reduce((total, row) => total + row.input_weight_kg, 0);
+  const utilized = sum(utilizationRows);
+  const utilizationValue = utilizationRows.reduce((total, row) => total + row.economic_value, 0);
+  const sold = sum(salesRows);
+  const revenue = salesRows.reduce((total, row) => total + row.total_value, 0);
+  const disposed = sum(residualRows);
+  const trendMap = new Map<string, number>();
+  for (const record of records) {
+    const date = record.recorded_at.slice(0, 10);
+    trendMap.set(date, (trendMap.get(date) ?? 0) + record.weight_kg);
+  }
+  const sourceMap = new Map<string, number>();
+  if (records.length) sourceMap.set("Kantin Demo", totalGenerated);
+
+  return {
+    source: "demo",
+    totalGenerated,
+    organic,
+    inorganic,
+    b3,
+    residualGenerated,
+    processed,
+    organicProcessed,
+    recycled,
+    utilized,
+    sold,
+    disposed,
+    revenue,
+    economicValue: revenue + utilizationValue,
+    kpi: {
+      diversionRate: ratio(utilized + sold + recycled, totalGenerated),
+      recyclingRate: ratio(recycled + sold, totalGenerated),
+      organicProcessingRate: ratio(organicProcessed, organic),
+      residualRate: ratio(residualGenerated, totalGenerated),
+      reductionRate: 0,
+      prevTotal: 0,
+    },
+    composition: [...byCategory.entries()].map(([category, weight]) => ({
+      category: category as WasteCategory,
+      weight,
+    })),
+    bySource: [...sourceMap.entries()].map(([name, weight]) => ({ name, weight })),
+    trend: [...trendMap.entries()]
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([date, weight]) => ({ date, weight: Number(weight.toFixed(2)) })),
+    utilization: [
+      { name: "Diolah", weight: processed },
+      { name: "Dimanfaatkan", weight: utilized },
+      { name: "Dijual", weight: sold },
+      { name: "Dibuang", weight: disposed },
+    ],
+  };
+}
 
 function endOfDay(date: string) {
   return `${date}T23:59:59.999Z`;
@@ -34,7 +182,7 @@ async function fetchAllRows<T>(
   }
 }
 
-export async function fetchDashboard(f: DashboardFilters) {
+async function fetchLiveDashboard(f: DashboardFilters): Promise<DashboardMetrics> {
   let records = supabase
     .from("waste_records")
     .select("weight_kg, category, recorded_at, location_id, source_id")
@@ -178,4 +326,13 @@ export async function fetchDashboard(f: DashboardFilters) {
       { name: "Dibuang", weight: disposed },
     ],
   };
+}
+
+export async function fetchDashboard(filters: DashboardFilters): Promise<DashboardData> {
+  try {
+    return { ...(await fetchLiveDashboard(filters)), source: "database" };
+  } catch (error) {
+    if (!isMissingDatabaseSchema(error)) throw error;
+    return createDemoDashboard(filters);
+  }
 }
