@@ -102,7 +102,7 @@ function BatchesPage() {
           <Boxes className="size-8 text-muted-foreground" />
           <h2 className="mt-3 font-display font-bold">Belum ada batch yang cocok</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Batch baru akan muncul setelah timbulan dicatat.
+            Batch baru akan muncul setelah sampah dicatat.
           </p>
         </div>
       ) : (

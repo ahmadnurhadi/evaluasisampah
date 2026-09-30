@@ -29,7 +29,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
       { title: "Dashboard — Eco-School Waste Management" },
-      { name: "description", content: "Ringkasan timbulan, pemanfaatan, dan KPI sampah sekolah." },
+      { name: "description", content: "Ringkasan sampah yang dihasilkan, pemanfaatan, dan KPI sekolah." },
       { property: "og:title", content: "Dashboard Sampah Sekolah" },
       { property: "og:description", content: "KPI dan tren pengelolaan sampah sekolah." },
     ],
@@ -50,6 +50,13 @@ function today() {
 }
 function daysAgo(n: number) {
   return new Date(Date.now() - n * 86400000).toISOString().slice(0, 10);
+}
+
+function isDatabaseSchemaError(error: unknown) {
+  if (typeof error !== "object" || error === null) return false;
+  const code = "code" in error ? String(error.code) : "";
+  const message = "message" in error ? String(error.message) : "";
+  return code === "PGRST205" || code === "42P01" || /schema cache|could not find the table|does not exist/i.test(message);
 }
 
 function Kpi({ label, value, hint }: { label: string; value: string; hint?: string }) {
@@ -76,10 +83,11 @@ function Dashboard() {
     },
   });
 
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, error, isLoading, isError, refetch } = useQuery({
     queryKey: ["dashboard", filters],
     queryFn: () => fetchDashboard(filters),
   });
+  const schemaUnavailable = isDatabaseSchemaError(error);
 
   return (
     <AppShell title="Dashboard" description="Ringkasan pengelolaan sampah sekolah">
@@ -152,9 +160,13 @@ function Dashboard() {
       {isError ? (
         <div role="alert" className="eco-surface flex flex-col items-start gap-3 p-5">
           <div>
-            <h2 className="font-display text-sm font-bold">Data dashboard gagal dimuat</h2>
+            <h2 className="font-display text-sm font-bold">
+              {schemaUnavailable ? "Database belum siap" : "Data dashboard gagal dimuat"}
+            </h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Periksa koneksi dan akses akun, lalu coba muat ulang.
+              {schemaUnavailable
+                ? "Tabel dashboard belum tersedia. Terapkan migrasi database Supabase, lalu coba lagi."
+                : "Periksa koneksi internet dan akses akun, lalu coba muat ulang."}
             </p>
           </div>
           <Button variant="outline" onClick={() => void refetch()}>
@@ -170,7 +182,7 @@ function Dashboard() {
       ) : (
         <>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <Kpi label="Total timbulan" value={fmtKg(data.totalGenerated)} />
+            <Kpi label="Sampah dihasilkan" value={fmtKg(data.totalGenerated)} />
             <Kpi label="Organik" value={fmtKg(data.organic)} />
             <Kpi label="Anorganik" value={fmtKg(data.inorganic)} />
             <Kpi label="B3 / berbahaya" value={fmtKg(data.b3)} />
@@ -202,7 +214,7 @@ function Dashboard() {
 
           <div className="mt-5 grid gap-4 lg:grid-cols-2">
             <div className="eco-surface p-4">
-              <h2 className="mb-3 font-display text-sm font-bold">Tren timbulan</h2>
+              <h2 className="mb-3 font-display text-sm font-bold">Sampah yang dihasilkan</h2>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={data.trend}>

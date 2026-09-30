@@ -83,7 +83,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         name: "description",
         content:
-          "Sistem monitoring, evaluasi, dan pemanfaatan sampah sekolah dari timbulan sampai pemanfaatan.",
+          "Sistem pencatatan, evaluasi, dan pemanfaatan sampah sekolah dari awal hingga akhir.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

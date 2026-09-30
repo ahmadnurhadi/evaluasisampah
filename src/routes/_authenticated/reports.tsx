@@ -19,10 +19,10 @@ export const Route = createFileRoute("/_authenticated/reports")({
 type ReportKind = "daily" | "weekly" | "monthly" | "generated" | "composition" | "sources" | "processing" | "utilization" | "sales" | "residual" | "audits" | "findings" | "activities";
 type ReportRow = Record<string, string | number>;
 const REPORTS: { value: ReportKind; label: string }[] = [
-  { value: "daily", label: "Timbulan harian" },
-  { value: "weekly", label: "Timbulan mingguan" },
-  { value: "monthly", label: "Timbulan bulanan" },
-  { value: "generated", label: "Timbulan sampah" },
+  { value: "daily", label: "Sampah harian" },
+  { value: "weekly", label: "Sampah mingguan" },
+  { value: "monthly", label: "Sampah bulanan" },
+  { value: "generated", label: "Sampah yang dihasilkan" },
   { value: "composition", label: "Komposisi sampah" },
   { value: "sources", label: "Sumber sampah" },
   { value: "processing", label: "Pengolahan" },

@@ -9,7 +9,7 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Pantau timbulan, pengumpulan, pemilahan, pengolahan, pemanfaatan, dan penjualan sampah sekolah dalam satu sistem terintegrasi.",
+          "Pantau sampah yang dihasilkan, dikumpulkan, dipilah, diolah, dimanfaatkan, dan dijual dalam satu sistem terintegrasi.",
       },
       { property: "og:title", content: "Eco-School Waste Management" },
       {
@@ -22,7 +22,7 @@ export const Route = createFileRoute("/")({
 });
 
 const FEATURES = [
-  { icon: Scale, title: "Timbulan & Penimbangan", text: "Catat berat sampah per lokasi dan sumber dalam hitungan detik." },
+  { icon: Scale, title: "Pencatatan & Penimbangan", text: "Catat berat sampah per lokasi dan sumber dalam hitungan detik." },
   { icon: Recycle, title: "Pemilahan & Pengolahan", text: "Pilah satu batch jadi beberapa kategori, lalu olah jadi kompos atau produk baru." },
   { icon: QrCode, title: "QR per Lokasi", text: "Pindai QR di kelas atau tempat sampah, form langsung terisi lokasinya." },
   { icon: ClipboardCheck, title: "Audit Lingkungan", text: "Nilai kebersihan, catat temuan, dan pantau rencana perbaikan." },
@@ -53,7 +53,7 @@ function Landing() {
           Monitoring · Evaluasi · Pemanfaatan
         </p>
         <h1 className="mx-auto mt-5 max-w-3xl text-4xl font-extrabold sm:text-5xl">
-          Kelola sampah sekolah dari timbulan sampai manfaatnya
+          Kelola sampah sekolah dari pencatatan hingga pemanfaatan
         </h1>
         <p className="mx-auto mt-4 max-w-2xl text-base text-muted-foreground">
           Sistem terintegrasi untuk mencatat, menelusuri, mengaudit, dan melaporkan seluruh siklus

@@ -27,7 +27,7 @@ export const Route = createFileRoute("/_authenticated/input")({
   head: () => ({
     meta: [
       { title: "Input Sampah — Eco-School Waste Management" },
-      { name: "description", content: "Catat timbulan sampah dan buat batch traceability." },
+      { name: "description", content: "Catat jumlah sampah dan buat batch yang mudah dilacak." },
     ],
   }),
   component: WasteInput,
@@ -264,7 +264,7 @@ function WasteInput() {
         setPendingCount(queued.length);
         toast.success("Catatan disimpan di perangkat dan akan disinkronkan saat online.");
       } else {
-        toast.success(`Timbulan tercatat. ID batch ${result.batchCode}`);
+        toast.success(`Sampah berhasil dicatat. ID batch ${result.batchCode}`);
       }
       setWeight("");
       setPhotoUrl(null);
@@ -272,14 +272,14 @@ function WasteInput() {
       setRecordedAt(localDateTime());
       await invalidateWasteQueries(queryClient);
     },
-    onError: (error) => toast.error(error.message || "Gagal mencatat timbulan."),
+    onError: (error) => toast.error(error.message || "Gagal mencatat sampah."),
   });
 
   const queryFailed =
     schoolsQuery.isError || locationsQuery.isError || sourcesQuery.isError || typesQuery.isError;
 
   return (
-    <AppShell title="Input Sampah" description="Catat timbulan dan buat batch yang dapat ditelusuri">
+    <AppShell title="Input Sampah" description="Catat jumlah sampah dan buat batch yang dapat dilacak">
       {!isOnline || pendingCount > 0 || syncMessage ? (
         <div role="status" className="eco-surface mb-4 flex flex-wrap items-center justify-between gap-2 p-3 text-sm">
           <p>{!isOnline ? "Offline: catatan baru disimpan di perangkat." : pendingCount ? `${pendingCount} catatan menunggu sinkronisasi.` : syncMessage}</p>
@@ -294,7 +294,7 @@ function WasteInput() {
 
       {!canRecord ? (
         <div role="alert" className="eco-surface mb-4 p-4 text-sm">
-          Peran akun ini hanya dapat melihat data, bukan membuat catatan timbulan.
+          Peran akun ini hanya dapat melihat data, bukan mencatat sampah.
         </div>
       ) : null}
 
@@ -318,7 +318,7 @@ function WasteInput() {
                 <Scale className="size-5" />
               </span>
               <div>
-                <h2 className="font-display text-base font-bold">Timbulan baru</h2>
+                <h2 className="font-display text-base font-bold">Catatan sampah baru</h2>
                 <p className="text-xs text-muted-foreground">Batch dan riwayat awal dibuat otomatis.</p>
               </div>
             </div>
@@ -448,7 +448,7 @@ function WasteInput() {
           <div className="flex items-center justify-between gap-3 border-b border-border pb-4">
             <div>
               <h2 className="font-display text-base font-bold">Catatan terbaru</h2>
-              <p className="text-xs text-muted-foreground">Timbulan dan batch di sekolah terpilih</p>
+              <p className="text-xs text-muted-foreground">Catatan sampah dan batch di sekolah terpilih</p>
             </div>
             <Camera className="size-5 text-muted-foreground" />
           </div>
@@ -476,7 +476,7 @@ function WasteInput() {
                     <div className="shrink-0 text-right">
                       <p className="text-sm font-semibold">{fmtKg(Number(record.weight_kg))}</p>
                       <p className="text-xs text-muted-foreground">
-                        {batch?.stage ? STAGE_LABEL[batch.stage] : "Timbulan"}
+                        {batch?.stage ? STAGE_LABEL[batch.stage] : "Baru dicatat"}
                       </p>
                     </div>
                   </div>
@@ -484,7 +484,7 @@ function WasteInput() {
               })}
             </div>
           ) : (
-            <p className="py-8 text-center text-sm text-muted-foreground">Belum ada timbulan yang tercatat.</p>
+            <p className="py-8 text-center text-sm text-muted-foreground">Belum ada sampah yang dicatat.</p>
           )}
         </section>
       </div>

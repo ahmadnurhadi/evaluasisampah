@@ -44,6 +44,9 @@ export async function fetchDashboard(f: DashboardFilters) {
   if (f.locationId) records = records.eq("location_id", f.locationId);
   if (f.category) records = records.eq("category", f.category);
   if (f.sourceId) records = records.eq("source_id", f.sourceId);
+  const prevSpanMs = new Date(f.to).getTime() - new Date(f.from).getTime();
+  const prevTo = new Date(new Date(f.from).getTime() - 86400000).toISOString().slice(0, 10);
+  const prevFrom = new Date(new Date(prevTo).getTime() - prevSpanMs).toISOString().slice(0, 10);
   let previousRecords = supabase
     .from("waste_records")
     .select("weight_kg, location_id, source_id, category")
@@ -53,10 +56,6 @@ export async function fetchDashboard(f: DashboardFilters) {
   if (f.locationId) previousRecords = previousRecords.eq("location_id", f.locationId);
   if (f.category) previousRecords = previousRecords.eq("category", f.category);
   if (f.sourceId) previousRecords = previousRecords.eq("source_id", f.sourceId);
-
-  const prevSpanMs = new Date(f.to).getTime() - new Date(f.from).getTime();
-  const prevTo = new Date(new Date(f.from).getTime() - 86400000).toISOString().slice(0, 10);
-  const prevFrom = new Date(new Date(prevTo).getTime() - prevSpanMs).toISOString().slice(0, 10);
 
   const [recordRows, prevRows, processingRows, utilRows, saleRows, residualRows, sourceRows] = await Promise.all([
     fetchAllRows((start, end) => records.range(start, end)),
