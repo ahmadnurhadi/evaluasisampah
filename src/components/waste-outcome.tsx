@@ -224,7 +224,7 @@ export function WasteOutcomePage({ kind }: { kind: WasteOutcomeKind }) {
           p_batch_id: form.batchId, p_method: form.method, p_input_weight_kg: weight,
           p_output_weight_kg: output, p_processed_at: date, p_responsible_name: form.responsible || null,
           p_result: form.result || null, p_photo_url: form.photo, p_notes: form.notes || null,
-        });
+        } as never);
         if (error) throw error;
         return data;
       }
@@ -235,7 +235,7 @@ export function WasteOutcomePage({ kind }: { kind: WasteOutcomeKind }) {
           p_batch_id: form.batchId, p_utilization_type: form.destination || "Pemanfaatan sekolah",
           p_weight_kg: weight, p_destination: form.destination || null, p_partner_id: form.partnerId || null,
           p_used_at: date, p_economic_value: value, p_photo_url: form.photo, p_notes: form.notes || null,
-        });
+        } as never);
         if (error) throw error;
         return data;
       }
@@ -247,7 +247,7 @@ export function WasteOutcomePage({ kind }: { kind: WasteOutcomeKind }) {
           p_batch_id: form.batchId, p_waste_type_id: form.typeId, p_weight_kg: weight,
           p_price_per_kg: price, p_partner_id: form.partnerId, p_sold_at: date,
           p_payment_status: form.payment, p_notes: form.notes || null,
-        });
+        } as never);
         if (error) throw error;
         return data?.[0]?.transaction_code ?? data?.[0]?.sale_id;
       }
@@ -256,7 +256,7 @@ export function WasteOutcomePage({ kind }: { kind: WasteOutcomeKind }) {
         p_batch_id: form.batchId, p_weight_kg: weight, p_destination: form.destination,
         p_disposal_method: form.method, p_disposed_at: date, p_transporter: form.transporter || null,
         p_photo_url: form.photo, p_notes: form.notes || null,
-      });
+      } as never);
       if (error) throw error;
       return data;
     },

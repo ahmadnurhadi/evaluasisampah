@@ -111,7 +111,7 @@ function SortingPage() {
           category: line.category,
           waste_type_id: line.wasteTypeId || null,
           weight_kg: Number(line.weight),
-        })),
+        } as never)),
         p_notes: notes.trim() || null,
       });
       if (error) throw error;

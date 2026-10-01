@@ -88,7 +88,7 @@ function CollectionPage() {
         p_estimated_weight_kg: estimatedWeight ? Number(estimatedWeight) : null,
         p_photo_url: photoUrl,
         p_notes: notes.trim() || null,
-      });
+      } as never);
       if (error) throw error;
       if (!data) throw new Error("Pengumpulan tidak berhasil disimpan.");
       return data;

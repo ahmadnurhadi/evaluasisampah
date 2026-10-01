@@ -144,7 +144,7 @@ function WasteInput() {
     let active = true;
 
     async function refreshPending() {
-      const queued = await listQueuedWasteGeneration(userId);
+      const queued = await listQueuedWasteGeneration(userId!);
       if (active) setPendingCount(queued.length);
     }
 
@@ -153,7 +153,7 @@ function WasteInput() {
       syncingRef.current = true;
       setSyncMessage("");
       try {
-        const queued = await listQueuedWasteGeneration(userId);
+        const queued = await listQueuedWasteGeneration(userId!);
         let synced = 0;
         for (const entry of queued) {
           const { error } = await supabase.rpc("record_waste_generation_v2", {
@@ -167,7 +167,7 @@ function WasteInput() {
             p_waste_type_id: entry.wasteTypeId,
             p_photo_url: entry.photoUrl,
             p_notes: entry.notes,
-          });
+          } as never);
           if (error) {
             setSyncMessage("Sebagian catatan belum tersinkron. Antrean akan dicoba lagi saat koneksi tersedia.");
             break;
@@ -175,7 +175,7 @@ function WasteInput() {
           await removeQueuedWasteGeneration(entry.requestId);
           synced += 1;
         }
-        const remaining = await listQueuedWasteGeneration(userId);
+        const remaining = await listQueuedWasteGeneration(userId!);
         if (active) setPendingCount(remaining.length);
         if (synced) {
           toast.success(`${synced} catatan offline berhasil disinkronkan.`);
@@ -246,7 +246,7 @@ function WasteInput() {
         p_waste_type_id: payload.wasteTypeId,
         p_photo_url: payload.photoUrl,
         p_notes: payload.notes,
-      });
+      } as never);
       if (error) {
         if (!navigator.onLine || error.message.toLowerCase().includes("fetch")) {
           await queueWasteGeneration(payload);
@@ -476,7 +476,7 @@ function WasteInput() {
                     <div className="shrink-0 text-right">
                       <p className="text-sm font-semibold">{fmtKg(Number(record.weight_kg))}</p>
                       <p className="text-xs text-muted-foreground">
-                        {batch?.stage ? STAGE_LABEL[batch.stage] : "Baru dicatat"}
+                        {batch?.stage ? STAGE_LABEL[batch.stage as keyof typeof STAGE_LABEL] : "Baru dicatat"}
                       </p>
                     </div>
                   </div>

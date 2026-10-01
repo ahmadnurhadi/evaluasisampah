@@ -114,7 +114,7 @@ function AuditsPage() {
         p_scores: payload,
         p_photo_url: photoUrl,
         p_notes: notes.trim() || null,
-      });
+      } as never);
       if (error) throw error;
       if (!data?.[0]) throw new Error("Audit gagal disimpan.");
       return data[0];
