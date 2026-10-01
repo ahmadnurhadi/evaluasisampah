@@ -113,7 +113,7 @@ function SortingPage() {
           weight_kg: Number(line.weight),
         })),
         p_notes: notes.trim() || null,
-      });
+      } as never);
       if (error) throw error;
       if (!data) throw new Error("Hasil pilahan tidak berhasil disimpan.");
       return data;

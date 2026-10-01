@@ -96,7 +96,7 @@ function ActivitiesPage() {
         p_photo_url: photoUrl,
         p_description: description.trim() || null,
         p_result: result.trim() || null,
-      });
+      } as never);
       if (error) throw error;
       if (!data) throw new Error("Kegiatan tidak berhasil disimpan.");
       return data;
