@@ -5,15 +5,13 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
       { title: "Masuk — Eco-School Waste Management" },
-      { name: "description", content: "Masuk atau daftar untuk mengelola data sampah sekolah." },
+      { name: "description", content: "Masuk untuk mengelola data sampah sekolah." },
       { property: "og:title", content: "Masuk — Eco-School Waste Management" },
       { property: "og:description", content: "Akses sistem monitoring sampah sekolah." },
     ],
