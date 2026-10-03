@@ -16,6 +16,7 @@ import {
   YAxis,
 } from "recharts";
 import { AppShell } from "@/components/app-shell";
+import { SchoolFolders } from "@/components/school-folders";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -72,7 +73,7 @@ function Kpi({ label, value, hint }: { label: string; value: string; hint?: stri
 
 function Dashboard() {
   const [filters, setFilters] = useState<DashboardFilters>({ from: daysAgo(30), to: today() });
-  const { schoolId } = useSchoolScope();
+  const { schoolId, schools, isSuperAdmin } = useSchoolScope();
 
   const { data: masters } = useQuery({
     queryKey: ["dashboard-masters", schoolId],
@@ -91,6 +92,26 @@ function Dashboard() {
   const { data, error, isLoading, isError, refetch } = useQuery({
     queryKey: ["dashboard", filters, schoolId],
     queryFn: () => fetchDashboard({ ...filters, schoolId }),
+  });
+  const inputRecordsQuery = useQuery({
+    queryKey: ["dashboard-input-records", filters, schoolId],
+    enabled: Boolean(schoolId) || isSuperAdmin,
+    queryFn: async () => {
+      let request = supabase.from("waste_records")
+        .select("id, school_id, category, weight_kg, recorded_at, locations(name)")
+        .is("deleted_at", null)
+        .gte("recorded_at", `${filters.from}T00:00:00.000Z`)
+        .lte("recorded_at", `${filters.to}T23:59:59.999Z`)
+        .order("recorded_at", { ascending: false })
+        .limit(1000);
+      if (schoolId) request = request.eq("school_id", schoolId);
+      if (filters.locationId) request = request.eq("location_id", filters.locationId);
+      if (filters.category) request = request.eq("category", filters.category);
+      if (filters.sourceId) request = request.eq("source_id", filters.sourceId);
+      const { data, error } = await request;
+      if (error) throw error;
+      return data ?? [];
+    },
   });
   const schemaUnavailable = isDatabaseSchemaError(error);
 
@@ -302,6 +323,25 @@ function Dashboard() {
           </div>
         </>
       )}
+      <section className="eco-surface mt-5 p-4 sm:p-6">
+        <div className="border-b border-border pb-3">
+          <h2 className="font-display text-base font-bold">Catatan input per sekolah</h2>
+          <p className="text-xs text-muted-foreground">{filters.from} sampai {filters.to}</p>
+        </div>
+        {inputRecordsQuery.isError ? <p role="alert" className="py-6 text-sm text-destructive">Catatan input gagal dimuat.</p> : inputRecordsQuery.isLoading ? <p className="py-6 text-sm text-muted-foreground">Memuat catatan input...</p> : (
+          <SchoolFolders
+            records={inputRecordsQuery.data ?? []}
+            schools={schools}
+            emptyMessage="Belum ada input sampah pada rentang ini."
+            getSummary={(records) => `${records.length} input · ${fmtKg(records.reduce((total, record) => total + Number(record.weight_kg), 0))}`}
+          >
+            {(inputRecordsQuery.data ?? []).map((record) => {
+              const location = Array.isArray(record.locations) ? record.locations[0] : record.locations;
+              return <article key={record.id} className="flex items-start justify-between gap-3 py-3"><div className="min-w-0"><p className="truncate text-sm font-semibold">{location?.name ?? "Lokasi"}</p><p className="text-xs text-muted-foreground">{CATEGORY_LABEL[record.category]} · {fmtDateTime(record.recorded_at)}</p></div><p className="shrink-0 text-sm font-bold">{fmtKg(Number(record.weight_kg))}</p></article>;
+            })}
+          </SchoolFolders>
+        )}
+      </section>
     </AppShell>
   );
 }

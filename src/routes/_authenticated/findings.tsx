@@ -4,6 +4,7 @@ import { useState } from "react";
 import { AlertTriangle, LoaderCircle, Plus, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
+import { SchoolFolders } from "@/components/school-folders";
 import { EvidenceImage } from "@/components/evidence-image";
 import { PhotoUpload } from "@/components/photo-upload";
 import { Badge } from "@/components/ui/badge";
@@ -28,7 +29,7 @@ const SEVERITIES = Object.keys(SEVERITY_LABEL) as Severity[];
 function FindingsPage() {
   const { canRecord, isManager } = useAuthProfile();
   const queryClient = useQueryClient();
-  const { schoolId: activeSchoolId, isSuperAdmin } = useSchoolScope();
+  const { schoolId: activeSchoolId, schools, isSuperAdmin } = useSchoolScope();
   const [locationId, setLocationId] = useState("");
   const [auditId, setAuditId] = useState("");
   const [category, setCategory] = useState("kebersihan");
@@ -68,7 +69,7 @@ function FindingsPage() {
     queryFn: async () => {
       const request = supabase.from("audit_findings")
         .select("id, finding_code, category, description, severity, recommendation, pic_name, due_date, status, created_at, audit_id, audits(school_id), locations(name, school_id), action_plans(id, action, pic_name, due_date, status)")
-        .is("deleted_at", null).order("created_at", { ascending: false }).limit(100);
+        .is("deleted_at", null).order("created_at", { ascending: false }).limit(1000);
       const { data, error } = await request;
       if (error) throw error;
       return (data ?? []).filter((finding) => {
@@ -76,6 +77,10 @@ function FindingsPage() {
         const location = Array.isArray(finding.locations) ? finding.locations[0] : finding.locations;
         if (!activeSchoolId && isSuperAdmin) return true;
         return audit?.school_id === activeSchoolId || location?.school_id === activeSchoolId;
+      }).map((finding) => {
+        const audit = Array.isArray(finding.audits) ? finding.audits[0] : finding.audits;
+        const location = Array.isArray(finding.locations) ? finding.locations[0] : finding.locations;
+        return { ...finding, school_id: audit?.school_id ?? location?.school_id ?? null };
       });
     },
   });
@@ -163,7 +168,31 @@ function FindingsPage() {
           </div>
         ) : null}
 
-        <section className="eco-surface min-w-0 p-4 sm:p-6"><div className="border-b border-border pb-4"><h2 className="font-display text-base font-bold">Daftar temuan</h2><p className="text-xs text-muted-foreground">Temuan dan progres tindakan korektif</p></div>{findingsQuery.isError ? <p role="alert" className="py-6 text-sm text-destructive">Temuan gagal dimuat.</p> : findingsQuery.isLoading ? <p className="py-6 text-sm text-muted-foreground">Memuat temuan...</p> : findingsQuery.data?.length ? <div className="divide-y divide-border">{findingsQuery.data.map((finding) => { const location = Array.isArray(finding.locations) ? finding.locations[0] : finding.locations; return <article key={finding.id} className="space-y-3 py-4"><div className="flex flex-wrap items-start justify-between gap-3"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><h3 className="font-semibold">{finding.finding_code}</h3><Badge variant={finding.severity === "critical" || finding.severity === "high" ? "destructive" : "secondary"}>{SEVERITY_LABEL[finding.severity]}</Badge></div><p className="mt-1 text-sm">{finding.description}</p>{(finding as { photo_url?: string | null }).photo_url ? <EvidenceImage path={(finding as { photo_url?: string | null }).photo_url} className="mt-2 h-36 w-full rounded-md object-cover sm:w-56" alt={`Bukti temuan ${finding.finding_code}`} /> : null}<p className="text-xs text-muted-foreground">{location?.name ?? "Lokasi"} · PIC {finding.pic_name ?? "belum ditetapkan"} · tenggat {fmtDate(finding.due_date)}</p></div><Select value={finding.status} onValueChange={(value) => updateFindingStatus.mutate({ id: finding.id, status: value as FindingStatus })} disabled={updateFindingStatus.isPending || !canRecord}><SelectTrigger className="w-40"><SelectValue /></SelectTrigger><SelectContent>{STATUSES.map((value) => <SelectItem key={value} value={value}>{FINDING_STATUS_LABEL[value]}</SelectItem>)}</SelectContent></Select></div>{finding.recommendation ? <p className="text-xs text-muted-foreground">Rekomendasi: {finding.recommendation}</p> : null}{finding.action_plans.length ? <div className="space-y-2 border-l-2 border-primary/30 pl-3">{finding.action_plans.map((plan) => <div key={plan.id} className="flex flex-wrap items-center justify-between gap-2"><div><p className="text-sm">{plan.action}</p><p className="text-xs text-muted-foreground">{plan.pic_name ?? "PIC belum diisi"} · {fmtDate(plan.due_date)}</p></div><Select value={plan.status} onValueChange={(value) => updatePlanStatus.mutate({ id: plan.id, status: value as FindingStatus })} disabled={!isManager || updatePlanStatus.isPending}><SelectTrigger className="w-40"><SelectValue /></SelectTrigger><SelectContent>{STATUSES.map((value) => <SelectItem key={value} value={value}>{FINDING_STATUS_LABEL[value]}</SelectItem>)}</SelectContent></Select></div>)}</div> : <p className="text-xs text-muted-foreground">Belum ada rencana aksi.</p>}</article>; })}</div> : <p className="py-8 text-center text-sm text-muted-foreground">Belum ada temuan.</p>}</section>
+        <section className="eco-surface min-w-0 p-4 sm:p-6">
+          <div className="border-b border-border pb-4"><h2 className="font-display text-base font-bold">Daftar temuan</h2><p className="text-xs text-muted-foreground">Temuan dan progres tindakan korektif</p></div>
+          {findingsQuery.isError ? <p role="alert" className="py-6 text-sm text-destructive">Temuan gagal dimuat.</p> : findingsQuery.isLoading ? <p className="py-6 text-sm text-muted-foreground">Memuat temuan...</p> : (
+            <SchoolFolders records={findingsQuery.data ?? []} schools={schools} emptyMessage="Belum ada temuan.">
+              {(findingsQuery.data ?? []).map((finding) => {
+                const location = Array.isArray(finding.locations) ? finding.locations[0] : finding.locations;
+                return (
+                  <article key={finding.id} className="space-y-3 py-4">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2"><h3 className="font-semibold">{finding.finding_code}</h3><Badge variant={finding.severity === "critical" || finding.severity === "high" ? "destructive" : "secondary"}>{SEVERITY_LABEL[finding.severity]}</Badge></div>
+                        <p className="mt-1 text-sm">{finding.description}</p>
+                        {(finding as { photo_url?: string | null }).photo_url ? <EvidenceImage path={(finding as { photo_url?: string | null }).photo_url} className="mt-2 h-36 w-full rounded-md object-cover sm:w-56" alt={`Bukti temuan ${finding.finding_code}`} /> : null}
+                        <p className="text-xs text-muted-foreground">{location?.name ?? "Lokasi"} · PIC {finding.pic_name ?? "belum ditetapkan"} · tenggat {fmtDate(finding.due_date)}</p>
+                      </div>
+                      <Select value={finding.status} onValueChange={(value) => updateFindingStatus.mutate({ id: finding.id, status: value as FindingStatus })} disabled={updateFindingStatus.isPending || !canRecord}><SelectTrigger className="w-40"><SelectValue /></SelectTrigger><SelectContent>{STATUSES.map((value) => <SelectItem key={value} value={value}>{FINDING_STATUS_LABEL[value]}</SelectItem>)}</SelectContent></Select>
+                    </div>
+                    {finding.recommendation ? <p className="text-xs text-muted-foreground">Rekomendasi: {finding.recommendation}</p> : null}
+                    {finding.action_plans.length ? <div className="space-y-2 border-l-2 border-primary/30 pl-3">{finding.action_plans.map((plan) => <div key={plan.id} className="flex flex-wrap items-center justify-between gap-2"><div><p className="text-sm">{plan.action}</p><p className="text-xs text-muted-foreground">{plan.pic_name ?? "PIC belum diisi"} · {fmtDate(plan.due_date)}</p></div><Select value={plan.status} onValueChange={(value) => updatePlanStatus.mutate({ id: plan.id, status: value as FindingStatus })} disabled={!isManager || updatePlanStatus.isPending}><SelectTrigger className="w-40"><SelectValue /></SelectTrigger><SelectContent>{STATUSES.map((value) => <SelectItem key={value} value={value}>{FINDING_STATUS_LABEL[value]}</SelectItem>)}</SelectContent></Select></div>)}</div> : <p className="text-xs text-muted-foreground">Belum ada rencana aksi.</p>}
+                  </article>
+                );
+              })}
+            </SchoolFolders>
+          )}
+        </section>
       </div>
     </AppShell>
   );

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Coins, LoaderCircle, Recycle, Sprout, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
+import { SchoolFolders } from "@/components/school-folders";
 import { PhotoUpload } from "@/components/photo-upload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -99,7 +100,7 @@ export function WasteOutcomePage({ kind }: { kind: WasteOutcomeKind }) {
         .select("id, batch_code, initial_weight_kg, stage, waste_sorting(category, waste_type_id, weight_kg), waste_processing(input_weight_kg, output_weight_kg)")
         .is("deleted_at", null)
         .order("generated_at", { ascending: false })
-        .limit(150);
+        .limit(1000);
       if (schoolId) request = request.eq("school_id", schoolId);
       const { data, error } = await request;
       if (error) throw error;
@@ -150,52 +151,42 @@ export function WasteOutcomePage({ kind }: { kind: WasteOutcomeKind }) {
       if (kind === "processing") {
         let request = supabase.from("waste_processing")
           .select("id, input_weight_kg, output_weight_kg, method, processed_at, responsible_name, waste_batches!inner(batch_code, school_id)")
-          .is("deleted_at", null).order("processed_at", { ascending: false }).limit(50);
+          .is("deleted_at", null).order("processed_at", { ascending: false }).limit(1000);
         if (schoolId) request = request.eq("waste_batches.school_id", schoolId);
         const { data, error } = await request;
         if (error) throw error;
-        return (data ?? []).map((row) => ({ id: row.id, schoolId: row.waste_batches.school_id, batch: row.waste_batches.batch_code, date: row.processed_at, weight: row.input_weight_kg, detail: `${METHOD_LABEL[row.method]} · output ${fmtKg(row.output_weight_kg)}` }));
+        return (data ?? []).map((row) => ({ id: row.id, school_id: row.waste_batches.school_id, batch: row.waste_batches.batch_code, date: row.processed_at, weight: row.input_weight_kg, detail: `${METHOD_LABEL[row.method]} · output ${fmtKg(row.output_weight_kg)}` }));
       }
       if (kind === "utilization") {
         let request = supabase.from("waste_utilization")
           .select("id, weight_kg, utilization_type, economic_value, used_at, waste_batches!inner(batch_code, school_id)")
-          .is("deleted_at", null).order("used_at", { ascending: false }).limit(50);
+          .is("deleted_at", null).order("used_at", { ascending: false }).limit(1000);
         if (schoolId) request = request.eq("waste_batches.school_id", schoolId);
         const { data, error } = await request;
         if (error) throw error;
-        return (data ?? []).map((row) => ({ id: row.id, schoolId: row.waste_batches.school_id, batch: row.waste_batches.batch_code, date: row.used_at, weight: row.weight_kg, detail: `${row.utilization_type} · ${fmtRp(row.economic_value)}` }));
+        return (data ?? []).map((row) => ({ id: row.id, school_id: row.waste_batches.school_id, batch: row.waste_batches.batch_code, date: row.used_at, weight: row.weight_kg, detail: `${row.utilization_type} · ${fmtRp(row.economic_value)}` }));
       }
       if (kind === "sales") {
         let request = supabase.from("waste_sales")
           .select("id, transaction_code, weight_kg, total_value, sold_at, payment_status, waste_batches(batch_code, school_id)")
-          .is("deleted_at", null).order("sold_at", { ascending: false }).limit(50);
+          .is("deleted_at", null).order("sold_at", { ascending: false }).limit(1000);
         if (schoolId) request = request.eq("waste_batches.school_id", schoolId);
         const { data, error } = await request;
         if (error) throw error;
-        return (data ?? []).map((row) => ({ id: row.id, schoolId: row.waste_batches?.school_id ?? null, batch: row.waste_batches?.batch_code ?? row.transaction_code, date: row.sold_at, weight: row.weight_kg, detail: `${fmtRp(Number(row.total_value ?? 0))} · ${PAYMENT_LABEL[row.payment_status]}` }));
+        return (data ?? []).map((row) => ({ id: row.id, school_id: row.waste_batches?.school_id ?? null, batch: row.waste_batches?.batch_code ?? row.transaction_code, date: row.sold_at, weight: row.weight_kg, detail: `${fmtRp(Number(row.total_value ?? 0))} · ${PAYMENT_LABEL[row.payment_status]}` }));
       }
       let request = supabase.from("residual_disposals")
         .select("id, weight_kg, destination, disposal_method, disposed_at, waste_batches!inner(batch_code, school_id)")
-        .is("deleted_at", null).order("disposed_at", { ascending: false }).limit(50);
+        .is("deleted_at", null).order("disposed_at", { ascending: false }).limit(1000);
       if (schoolId) request = request.eq("waste_batches.school_id", schoolId);
       const { data, error } = await request;
       if (error) throw error;
-      return (data ?? []).map((row) => ({ id: row.id, schoolId: row.waste_batches.school_id, batch: row.waste_batches.batch_code, date: row.disposed_at, weight: row.weight_kg, detail: `${row.destination} · ${row.disposal_method}` }));
+      return (data ?? []).map((row) => ({ id: row.id, school_id: row.waste_batches.school_id, batch: row.waste_batches.batch_code, date: row.disposed_at, weight: row.weight_kg, detail: `${row.destination} · ${row.disposal_method}` }));
     },
   });
 
   const selectedBatch = batches.find((batch) => batch.id === form.batchId);
   const selectedType = typesQuery.data?.find((type) => type.id === form.typeId);
-  const recordsBySchool = new Map<string, { name: string; records: NonNullable<typeof recordsQuery.data> }>();
-  for (const record of recordsQuery.data ?? []) {
-    const schoolKey = record.schoolId ?? "unknown";
-    const group = recordsBySchool.get(schoolKey) ?? {
-      name: schools.find((school) => school.id === record.schoolId)?.name ?? "Sekolah tidak diketahui",
-      records: [],
-    };
-    group.records.push(record);
-    recordsBySchool.set(schoolKey, group);
-  }
 
   useEffect(() => {
     if (kind === "sales" && selectedType) {
@@ -334,7 +325,7 @@ export function WasteOutcomePage({ kind }: { kind: WasteOutcomeKind }) {
         <section className="eco-surface min-w-0 p-4 sm:p-6">
           <div className="border-b border-border pb-4"><h2 className="font-display text-base font-bold">Riwayat {definition.noun}</h2><p className="text-xs text-muted-foreground">50 transaksi terakhir</p></div>
           {recordsQuery.isError ? <p role="alert" className="py-6 text-sm text-destructive">Riwayat gagal dimuat.</p> : recordsQuery.isLoading ? <p className="py-6 text-sm text-muted-foreground">Memuat riwayat...</p> : recordsQuery.data?.length ? (
-            <div className="divide-y divide-border">{[...recordsBySchool.entries()].map(([schoolIdKey, group]) => <section key={schoolIdKey}><h3 className="bg-muted/40 px-3 py-2 text-xs font-semibold">{group.name} · {group.records.length} catatan</h3><div className="divide-y divide-border">{group.records.map((record) => <div key={record.id} className="flex items-start justify-between gap-3 py-3"><div className="min-w-0"><p className="truncate text-sm font-semibold">{record.batch}</p><p className="text-xs text-muted-foreground">{record.detail} · {fmtDateTime(record.date)}</p></div><p className="shrink-0 text-sm font-bold">{fmtKg(Number(record.weight))}</p></div>)}</div></section>)}</div>
+            <SchoolFolders records={recordsQuery.data} schools={schools} emptyMessage="Belum ada transaksi." renderRecord={(record) => <div key={record.id} className="flex items-start justify-between gap-3 py-3"><div className="min-w-0"><p className="truncate text-sm font-semibold">{record.batch}</p><p className="text-xs text-muted-foreground">{record.detail} · {fmtDateTime(record.date)}</p></div><p className="shrink-0 text-sm font-bold">{fmtKg(Number(record.weight))}</p></div>} />
           ) : <p className="py-8 text-center text-sm text-muted-foreground">Belum ada transaksi.</p>}
           {batchesQuery.isError || partnersQuery.isError ? <p role="alert" className="mt-3 text-xs text-destructive">Data pendukung gagal dimuat.</p> : null}
         </section>

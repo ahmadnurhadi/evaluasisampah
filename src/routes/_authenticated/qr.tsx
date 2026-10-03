@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Download, Printer, QrCode, Search } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { SchoolFolders } from "@/components/school-folders";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuthProfile } from "@/hooks/use-auth";
@@ -16,14 +17,16 @@ export const Route = createFileRoute("/_authenticated/qr")({
 
 function QrPage() {
   const { isManager } = useAuthProfile();
-  const { schoolId, isSuperAdmin } = useSchoolScope();
+  const { schoolId, schools, isSuperAdmin } = useSchoolScope();
   const [search, setSearch] = useState("");
 
   const locationsQuery = useQuery({
     queryKey: ["qr-locations", schoolId],
-    enabled: Boolean(schoolId),
+    enabled: Boolean(schoolId) || isSuperAdmin,
     queryFn: async () => {
-      const { data, error } = await supabase.from("locations").select("id, name, code, type, qr_token").eq("school_id", schoolId!).is("deleted_at", null).order("name");
+      let request = supabase.from("locations").select("id, school_id, name, code, type, qr_token").is("deleted_at", null).order("name");
+      if (schoolId) request = request.eq("school_id", schoolId);
+      const { data, error } = await request;
       if (error) throw error;
       return data ?? [];
     },
@@ -53,7 +56,15 @@ function QrPage() {
       <div className="print-hidden eco-surface mb-4 grid gap-3 p-4 sm:grid-cols-[minmax(0,1fr)_minmax(14rem,0.7fr)]">
         <div className="relative"><Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input className="pl-9" aria-label="Cari lokasi" placeholder="Cari lokasi atau kode" value={search} onChange={(event) => setSearch(event.target.value)} /></div>
       </div>
-      {locationsQuery.isError ? <div role="alert" className="eco-surface p-5 text-sm text-destructive">Lokasi gagal dimuat.</div> : locationsQuery.isLoading ? <div className="eco-surface p-5 text-sm text-muted-foreground">Memuat lokasi...</div> : !schoolId ? <div className="eco-surface p-5 text-sm text-muted-foreground">{isSuperAdmin ? "Pilih sekolah di menu atas untuk melihat QR lokasi." : "Akun belum terhubung ke sekolah."}</div> : !locations.length ? <div className="eco-surface p-8 text-center text-sm text-muted-foreground">Tidak ada lokasi yang sesuai. Tambahkan lokasi melalui Master Data.</div> : <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 print:grid-cols-3">{locations.map((location) => { const target = reportUrl(location.id); const qrImage = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&format=svg&data=${encodeURIComponent(target)}`; return <article key={location.id} className="eco-surface overflow-hidden p-4"><div className="flex items-start justify-between gap-2"><div className="min-w-0"><h2 className="truncate font-display font-bold">{location.name}</h2><p className="text-xs text-muted-foreground">{location.code ?? "Tanpa kode"} · {location.type.replaceAll("_", " ")}</p></div><QrCode className="size-5 shrink-0 text-primary" /></div><div className="my-4 flex justify-center bg-white p-3"><img src={qrImage} alt={`QR code formulir sampah untuk ${location.name}`} className="size-44" loading="lazy" /></div><p className="mb-3 text-center text-[11px] text-muted-foreground">Pindai untuk membuka form dengan lokasi terpilih</p><div className="print-hidden flex gap-2"><Button variant="outline" className="flex-1" onClick={() => downloadQr(location)} disabled={!isManager}><Download /> PNG</Button><Button variant="outline" className="flex-1" onClick={() => window.print()}><Printer /> Cetak</Button></div></article>; })}</div>}
+      {locationsQuery.isError ? <div role="alert" className="eco-surface p-5 text-sm text-destructive">Lokasi gagal dimuat.</div> : locationsQuery.isLoading ? <div className="eco-surface p-5 text-sm text-muted-foreground">Memuat lokasi...</div> : !schoolId && !isSuperAdmin ? <div className="eco-surface p-5 text-sm text-muted-foreground">Akun belum terhubung ke sekolah.</div> : (
+        <SchoolFolders records={locations} schools={schools} emptyMessage="Tidak ada lokasi yang sesuai. Tambahkan lokasi melalui Master Data.">
+          {locations.map((location) => {
+            const target = reportUrl(location.id);
+            const qrImage = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&format=svg&data=${encodeURIComponent(target)}`;
+            return <article key={location.id} className="eco-surface overflow-hidden p-4"><div className="flex items-start justify-between gap-2"><div className="min-w-0"><h2 className="truncate font-display font-bold">{location.name}</h2><p className="text-xs text-muted-foreground">{location.code ?? "Tanpa kode"} · {location.type.replaceAll("_", " ")}</p></div><QrCode className="size-5 shrink-0 text-primary" /></div><div className="my-4 flex justify-center bg-white p-3"><img src={qrImage} alt={`QR code formulir sampah untuk ${location.name}`} className="size-44" loading="lazy" /></div><p className="mb-3 text-center text-[11px] text-muted-foreground">Pindai untuk membuka form dengan lokasi terpilih</p><div className="print-hidden flex gap-2"><Button variant="outline" className="flex-1" onClick={() => downloadQr(location)} disabled={!isManager}><Download /> PNG</Button><Button variant="outline" className="flex-1" onClick={() => window.print()}><Printer /> Cetak</Button></div></article>;
+          })}
+        </SchoolFolders>
+      )}
       <style>{`@media print { @page { margin: 10mm; } body { background: white !important; } .print-hidden, aside, header { display: none !important; } main { max-width: none !important; padding: 0 !important; } .eco-surface { box-shadow: none !important; break-inside: avoid; } }`}</style>
     </AppShell>
   );

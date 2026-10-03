@@ -4,12 +4,14 @@ import { useEffect, useRef, useState } from "react";
 import { Camera, LoaderCircle, Plus, Scale } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
+import { SchoolFolders } from "@/components/school-folders";
 import { PhotoUpload } from "@/components/photo-upload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuthProfile } from "@/hooks/use-auth";
+import { useSchoolScope } from "@/components/school-scope";
 import { supabase } from "@/integrations/supabase/client";
 import { invalidateWasteQueries } from "@/lib/query-invalidation";
 import {
@@ -46,6 +48,7 @@ function WasteInput() {
   const [syncMessage, setSyncMessage] = useState("");
   const search = Route.useSearch();
   const isSuperAdmin = roles.includes("super_admin");
+  const { schoolId: displaySchoolId, schools } = useSchoolScope();
   const profileSchoolId = user?.profile?.school_id ?? undefined;
   const [schoolName, setSchoolName] = useState("");
   const [locationId, setLocationId] = useState(search.locationId ?? "");
@@ -124,16 +127,17 @@ function WasteInput() {
   });
 
   const recentQuery = useQuery({
-    queryKey: ["recent-waste-records", schoolId],
-    enabled: Boolean(schoolId),
+    queryKey: ["recent-waste-records", displaySchoolId, isSuperAdmin],
+    enabled: Boolean(displaySchoolId) || isSuperAdmin,
     queryFn: async () => {
-      const { data, error } = await supabase
+      let request = supabase
         .from("waste_records")
-        .select("id, category, weight_kg, recorded_at, waste_batches(batch_code, stage)")
-        .eq("school_id", schoolId!)
+        .select("id, school_id, category, weight_kg, recorded_at, waste_batches(batch_code, stage)")
         .is("deleted_at", null)
         .order("recorded_at", { ascending: false })
-        .limit(12);
+        .limit(1000);
+      if (displaySchoolId) request = request.eq("school_id", displaySchoolId);
+      const { data, error } = await request;
       if (error) throw error;
       return data ?? [];
     },
@@ -478,14 +482,14 @@ function WasteInput() {
             <Camera className="size-5 text-muted-foreground" />
           </div>
 
-          {!schoolId ? (
+          {!displaySchoolId && !isSuperAdmin ? (
             <p className="py-8 text-center text-sm text-muted-foreground">Sekolah belum dipilih.</p>
           ) : recentQuery.isLoading ? (
             <p className="py-8 text-center text-sm text-muted-foreground">Memuat catatan...</p>
           ) : recentQuery.isError ? (
             <p role="alert" className="py-8 text-center text-sm text-destructive">Catatan gagal dimuat.</p>
-          ) : recentQuery.data?.length ? (
-            <div className="divide-y divide-border">
+          ) : (
+            <SchoolFolders records={recentQuery.data ?? []} schools={schools} emptyMessage="Belum ada sampah yang dicatat." getSummary={(records) => `${records.length} input · ${fmtKg(records.reduce((total, record) => total + Number(record.weight_kg), 0))}`}>
               {recentQuery.data.map((record) => {
                 const batch = Array.isArray(record.waste_batches)
                   ? record.waste_batches[0]
@@ -507,9 +511,7 @@ function WasteInput() {
                   </div>
                 );
               })}
-            </div>
-          ) : (
-            <p className="py-8 text-center text-sm text-muted-foreground">Belum ada sampah yang dicatat.</p>
+            </SchoolFolders>
           )}
         </section>
       </div>

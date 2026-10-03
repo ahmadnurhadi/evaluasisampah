@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { Boxes, Clock3, MapPin, Search } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { SchoolFolders } from "@/components/school-folders";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -44,7 +45,7 @@ function BatchesPage() {
         .select("id, school_id, batch_code, initial_weight_kg, stage, generated_at, collected_at, notes, locations(name), waste_sources(name), waste_records(category, weight_kg, recorded_at), waste_movements(id, stage, description, weight_kg, occurred_at), waste_collections(id, actual_weight_kg, collected_at, collector_name), waste_sorting(id, category, weight_kg, sorted_at), waste_processing(id, method, input_weight_kg, output_weight_kg, processed_at), waste_utilization(id, utilization_type, weight_kg, used_at), waste_sales(id, transaction_code, weight_kg, total_value, sold_at), residual_disposals(id, weight_kg, destination, disposed_at)")
         .is("deleted_at", null)
         .order("generated_at", { ascending: false })
-        .limit(100);
+        .limit(1000);
       if (schoolId) request = request.eq("school_id", schoolId);
       const { data, error } = await request;
       if (error) throw error;
@@ -104,7 +105,7 @@ function BatchesPage() {
           </p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <SchoolFolders records={visibleBatches} schools={schools} emptyMessage="Belum ada batch yang cocok">
           {visibleBatches.map((batch) => {
             const timeline = [
               ...(batch.waste_movements ?? []).map((movement) => ({
@@ -221,7 +222,7 @@ function BatchesPage() {
               </article>
             );
           })}
-        </div>
+        </SchoolFolders>
       )}
     </AppShell>
   );

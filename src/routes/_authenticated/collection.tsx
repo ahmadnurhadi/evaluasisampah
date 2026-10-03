@@ -4,6 +4,7 @@ import { useState } from "react";
 import { LoaderCircle, Truck } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
+import { SchoolFolders } from "@/components/school-folders";
 import { PhotoUpload } from "@/components/photo-upload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -66,7 +67,7 @@ function CollectionPage() {
         .select("id, collected_at, estimated_weight_kg, actual_weight_kg, collector_name, waste_batches!inner(batch_code, school_id)")
         .is("deleted_at", null)
         .order("collected_at", { ascending: false })
-        .limit(20);
+        .limit(1000);
       if (schoolId) request = request.eq("waste_batches.school_id", schoolId);
       const { data, error } = await request;
       if (error) throw error;
@@ -238,7 +239,10 @@ function CollectionPage() {
           ) : collectionsQuery.isLoading ? (
             <p className="py-8 text-sm text-muted-foreground">Memuat pengumpulan...</p>
           ) : collectionsQuery.data?.length ? (
-            <div className="divide-y divide-border">
+            <SchoolFolders records={collectionsQuery.data} schools={schools} emptyMessage="Belum ada pengumpulan tercatat." getSchoolId={(collection) => {
+              const batch = Array.isArray(collection.waste_batches) ? collection.waste_batches[0] : collection.waste_batches;
+              return batch?.school_id;
+            }}>
               {collectionsQuery.data.map((collection) => {
                 const batch = Array.isArray(collection.waste_batches)
                   ? collection.waste_batches[0]
@@ -257,7 +261,7 @@ function CollectionPage() {
                   </div>
                 );
               })}
-            </div>
+            </SchoolFolders>
           ) : (
             <p className="py-8 text-center text-sm text-muted-foreground">Belum ada pengumpulan tercatat.</p>
           )}

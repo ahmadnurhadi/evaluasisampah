@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ClipboardCheck, LoaderCircle, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
+import { SchoolFolders } from "@/components/school-folders";
 import { PhotoUpload } from "@/components/photo-upload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,7 +24,7 @@ export const Route = createFileRoute("/_authenticated/audits")({
 function AuditsPage() {
   const { user, isManager } = useAuthProfile();
   const queryClient = useQueryClient();
-  const { schoolId, isSuperAdmin } = useSchoolScope();
+  const { schoolId, schools, isSuperAdmin } = useSchoolScope();
   const [locationId, setLocationId] = useState("");
   const [auditorName, setAuditorName] = useState(user?.profile?.full_name ?? "");
   const [auditedAt, setAuditedAt] = useState(new Date().toISOString().slice(0, 10));
@@ -61,8 +62,8 @@ function AuditsPage() {
     enabled: Boolean(schoolId) || isSuperAdmin,
     queryFn: async () => {
       let request = supabase.from("audits")
-        .select("id, audited_at, auditor_name, total_score, notes, locations(name)")
-        .is("deleted_at", null).order("audited_at", { ascending: false }).limit(50);
+        .select("id, school_id, audited_at, auditor_name, total_score, notes, locations(name)")
+        .is("deleted_at", null).order("audited_at", { ascending: false }).limit(1000);
       if (schoolId) request = request.eq("school_id", schoolId);
       const { data, error } = await request;
       if (error) throw error;
@@ -143,7 +144,17 @@ function AuditsPage() {
             <Button type="submit" size="lg" className="h-12 w-full sm:w-auto" disabled={!isManager || !schoolId || !locationId || saveAudit.isPending || indicatorsQuery.isError || locationsQuery.isError}><span>{saveAudit.isPending ? <LoaderCircle className="animate-spin" /> : <ClipboardCheck />}</span>Simpan audit · {fmtPct(computedScore)}</Button>
           </form>
         ) : null}
-        <section className="eco-surface min-w-0 p-4 sm:p-6"><div className="border-b border-border pb-4"><h2 className="font-display text-base font-bold">Riwayat audit</h2><p className="text-xs text-muted-foreground">50 audit terakhir</p></div>{auditsQuery.isError ? <p role="alert" className="py-6 text-sm text-destructive">Riwayat audit gagal dimuat.</p> : auditsQuery.isLoading ? <p className="py-6 text-sm text-muted-foreground">Memuat audit...</p> : auditsQuery.data?.length ? <div className="divide-y divide-border">{auditsQuery.data.map((audit) => { const location = Array.isArray(audit.locations) ? audit.locations[0] : audit.locations; return <article key={audit.id} className="flex items-start justify-between gap-3 py-3"><div className="min-w-0"><p className="truncate text-sm font-semibold">{location?.name ?? "Lokasi"}</p><p className="text-xs text-muted-foreground">{audit.auditor_name || "Auditor"} · {fmtDate(audit.audited_at)}</p></div><div className="flex shrink-0 items-center gap-2"><p className="font-display text-lg font-bold">{fmtPct(Number(audit.total_score))}</p>{isManager ? <Button variant="ghost" size="icon" title="Arsipkan audit" aria-label={`Arsipkan audit ${fmtDate(audit.audited_at)}`} disabled={archiveAudit.isPending} onClick={() => archiveAudit.mutate(audit.id)}><Trash2 /></Button> : null}</div></article>; })}</div> : <p className="py-8 text-center text-sm text-muted-foreground">Belum ada audit tercatat.</p>}</section>
+        <section className="eco-surface min-w-0 p-4 sm:p-6">
+          <div className="border-b border-border pb-4"><h2 className="font-display text-base font-bold">Riwayat audit</h2><p className="text-xs text-muted-foreground">Audit tersimpan menurut sekolah</p></div>
+          {auditsQuery.isError ? <p role="alert" className="py-6 text-sm text-destructive">Riwayat audit gagal dimuat.</p> : auditsQuery.isLoading ? <p className="py-6 text-sm text-muted-foreground">Memuat audit...</p> : (
+            <SchoolFolders records={auditsQuery.data ?? []} schools={schools} emptyMessage="Belum ada audit tercatat.">
+              {(auditsQuery.data ?? []).map((audit) => {
+                const location = Array.isArray(audit.locations) ? audit.locations[0] : audit.locations;
+                return <article key={audit.id} className="flex items-start justify-between gap-3 py-3"><div className="min-w-0"><p className="truncate text-sm font-semibold">{location?.name ?? "Lokasi"}</p><p className="text-xs text-muted-foreground">{audit.auditor_name || "Auditor"} · {fmtDate(audit.audited_at)}</p></div><div className="flex shrink-0 items-center gap-2"><p className="font-display text-lg font-bold">{fmtPct(Number(audit.total_score))}</p>{isManager ? <Button variant="ghost" size="icon" title="Arsipkan audit" aria-label={`Arsipkan audit ${fmtDate(audit.audited_at)}`} disabled={archiveAudit.isPending} onClick={() => archiveAudit.mutate(audit.id)}><Trash2 /></Button> : null}</div></article>;
+              })}
+            </SchoolFolders>
+          )}
+        </section>
       </div>
     </AppShell>
   );

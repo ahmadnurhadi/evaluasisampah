@@ -15,12 +15,14 @@ const SchoolScopeContext = createContext<SchoolScope | null>(null);
 export function SchoolScopeProvider({ children }: { children: ReactNode }) {
   const { user, roles } = useAuthProfile();
   const isSuperAdmin = roles.includes("super_admin");
-  const [selectedSchoolId, setSelectedSchoolId] = useState<string | null>(null);
+  const [selectedSchoolId, setSelectedSchoolId] = useState<string | null>("");
   const schoolsQuery = useQuery({
-    queryKey: ["app-school-scope-options"],
-    enabled: isSuperAdmin,
+    queryKey: ["app-school-scope-options", isSuperAdmin, user?.profile?.school_id],
+    enabled: isSuperAdmin || Boolean(user?.profile?.school_id),
     queryFn: async () => {
-      const { data, error } = await supabase.from("schools").select("id, name").is("deleted_at", null).order("name");
+      let request = supabase.from("schools").select("id, name").is("deleted_at", null).order("name");
+      if (!isSuperAdmin && user?.profile?.school_id) request = request.eq("id", user.profile.school_id);
+      const { data, error } = await request;
       if (error) throw error;
       return data ?? [];
     },

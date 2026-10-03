@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { Download, FileBarChart, Printer } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { SchoolFolders } from "@/components/school-folders";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -49,7 +50,7 @@ function csvCell(value: string | number) {
 }
 
 function ReportsPage() {
-  const { schoolId, isSuperAdmin } = useSchoolScope();
+  const { schoolId, schools, isSuperAdmin } = useSchoolScope();
   const [kind, setKind] = useState<ReportKind>("generated");
   const [from, setFrom] = useState(monthStart);
   const [to, setTo] = useState(today);
@@ -177,7 +178,23 @@ function ReportsPage() {
       </div>
       <section className="eco-surface p-4 sm:p-6">
         <div className="mb-4 flex flex-wrap items-end justify-between gap-3 border-b border-border pb-4"><div><div className="flex items-center gap-2"><FileBarChart className="size-5 text-primary" /><h2 className="font-display text-base font-bold">{REPORTS.find((report) => report.value === kind)?.label}</h2></div><p className="mt-1 text-xs text-muted-foreground">{from} sampai {to} · {rows.length} baris</p></div><div className="text-right text-xs text-muted-foreground">{summary.totalWeight > 0 ? <p>Total berat: <strong className="text-foreground">{fmtKg(summary.totalWeight)}</strong></p> : null}{summary.totalValue > 0 ? <p>Total nilai: <strong className="text-foreground">{fmtRp(summary.totalValue)}</strong></p> : null}{kind === "audits" && rows.length ? <p>Nilai rata-rata tersedia pada setiap baris audit</p> : null}</div></div>
-        {reportQuery.isError ? <div role="alert" className="py-8 text-center text-sm text-destructive">Laporan gagal dimuat. Periksa akses sekolah dan koneksi.</div> : reportQuery.isLoading ? <p className="py-8 text-center text-sm text-muted-foreground">Memuat laporan...</p> : !rows.length ? <p className="py-8 text-center text-sm text-muted-foreground">Tidak ada data untuk rentang tanggal dan filter ini.</p> : <div className="overflow-x-auto"><table className="w-full min-w-[42rem] border-collapse text-left text-sm"><thead><tr className="border-b border-border">{columns.map((column) => <th key={column} className="whitespace-nowrap px-3 py-2 font-semibold">{column.replaceAll("_", " ")}</th>)}</tr></thead><tbody>{rows.map((row, index) => <tr key={String(row.id ?? row.Transaksi ?? row.Kode ?? `${kind}-${index}`)} className="border-b border-border/70 last:border-0">{columns.map((column) => <td key={column} className="max-w-80 px-3 py-2 align-top">{typeof row[column] === "number" ? Number(row[column]).toLocaleString("id-ID", { maximumFractionDigits: 2 }) : row[column]}</td>)}</tr>)}</tbody></table></div>}
+        {reportQuery.isError ? <div role="alert" className="py-8 text-center text-sm text-destructive">Laporan gagal dimuat. Periksa akses sekolah dan koneksi.</div> : reportQuery.isLoading ? <p className="py-8 text-center text-sm text-muted-foreground">Memuat laporan...</p> : (
+          <SchoolFolders
+            records={rows.map((row, index) => ({ id: String(row.id ?? row.Transaksi ?? row.Kode ?? `${kind}-${index}`), school_id: schoolId }))}
+            schools={schools}
+            emptyMessage="Tidak ada data untuk rentang tanggal dan filter ini."
+            renderRecord={(_, index) => (
+              <article key={index} className="grid gap-3 border-b border-border/70 py-3 last:border-0 sm:grid-cols-2 xl:grid-cols-3">
+                {columns.map((column) => (
+                  <div key={column} className="min-w-0">
+                    <p className="text-[11px] font-medium text-muted-foreground">{column.replaceAll("_", " ")}</p>
+                    <p className="break-words text-sm">{typeof rows[index][column] === "number" ? Number(rows[index][column]).toLocaleString("id-ID", { maximumFractionDigits: 2 }) : rows[index][column]}</p>
+                  </div>
+                ))}
+              </article>
+            )}
+          />
+        )}
       </section>
       <style>{`@media print { @page { size: landscape; margin: 12mm; } body { background: white !important; color: black !important; } .print-hidden, aside, header { display: none !important; } main { max-width: none !important; padding: 0 !important; } .eco-surface { border: 0 !important; box-shadow: none !important; } table { font-size: 9pt !important; } }`}</style>
     </AppShell>
