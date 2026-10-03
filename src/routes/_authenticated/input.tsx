@@ -490,7 +490,7 @@ function WasteInput() {
             <p role="alert" className="py-8 text-center text-sm text-destructive">Catatan gagal dimuat.</p>
           ) : (
             <SchoolFolders records={recentQuery.data ?? []} schools={schools} emptyMessage="Belum ada sampah yang dicatat." getSummary={(records) => `${records.length} input · ${fmtKg(records.reduce((total, record) => total + Number(record.weight_kg), 0))}`}>
-              {recentQuery.data.map((record) => {
+              {(recentQuery.data ?? []).map((record) => {
                 const batch = Array.isArray(record.waste_batches)
                   ? record.waste_batches[0]
                   : record.waste_batches;

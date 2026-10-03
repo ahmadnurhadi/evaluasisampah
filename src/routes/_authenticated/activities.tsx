@@ -25,7 +25,7 @@ export const Route = createFileRoute("/_authenticated/activities")({
 function ActivitiesPage() {
   const { user, canRecord } = useAuthProfile();
   const queryClient = useQueryClient();
-  const { schoolId, isSuperAdmin } = useSchoolScope();
+  const { schoolId, schools, isSuperAdmin } = useSchoolScope();
   const [name, setName] = useState("");
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [locationId, setLocationId] = useState("");

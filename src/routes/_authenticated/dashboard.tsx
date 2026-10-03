@@ -25,7 +25,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { useSchoolScope } from "@/components/school-scope";
 import { fetchDashboard, type DashboardFilters } from "@/lib/dashboard";
-import { CATEGORIES, CATEGORY_LABEL, fmtKg, fmtPct, fmtRp, type WasteCategory } from "@/lib/waste";
+import { CATEGORIES, CATEGORY_LABEL, fmtDateTime, fmtKg, fmtPct, fmtRp, type WasteCategory } from "@/lib/waste";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
