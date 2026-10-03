@@ -40,8 +40,15 @@ export function SchoolScopeProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useSchoolScope() {
+export function useSchoolScope(): SchoolScope {
   const context = useContext(SchoolScopeContext);
-  if (!context) throw new Error("useSchoolScope must be used inside SchoolScopeProvider.");
-  return context;
+  const { user, roles } = useAuthProfile();
+  if (context) return context;
+  // Fallback (e.g. after a hot reload recreates the context): use the account's own school.
+  return {
+    isSuperAdmin: roles.includes("super_admin"),
+    schoolId: user?.profile?.school_id ?? undefined,
+    schools: [],
+    setSchoolId: () => {},
+  };
 }
