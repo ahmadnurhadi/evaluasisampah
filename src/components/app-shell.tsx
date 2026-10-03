@@ -34,17 +34,17 @@ type NavItem = { to: string; label: string; icon: typeof Leaf; permission?: "rec
 
 export const NAV_ITEMS: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/input", label: "Input Sampah", icon: PlusCircle, permission: "recorder" },
-  { to: "/collection", label: "Pengumpulan", icon: Truck, permission: "recorder" },
+  { to: "/input", label: "Input Sampah", icon: PlusCircle, },
+  { to: "/collection", label: "Pengumpulan", icon: Truck, },
   { to: "/batches", label: "Batch Sampah", icon: Boxes },
-  { to: "/sorting", label: "Pemilahan", icon: SplitSquareHorizontal, permission: "recorder" },
-  { to: "/processing", label: "Pengolahan", icon: Recycle, permission: "recorder" },
-  { to: "/utilization", label: "Pemanfaatan", icon: Sprout, permission: "recorder" },
+  { to: "/sorting", label: "Pemilahan", icon: SplitSquareHorizontal, },
+  { to: "/processing", label: "Pengolahan", icon: Recycle, },
+  { to: "/utilization", label: "Pemanfaatan", icon: Sprout, },
   { to: "/waste-bank", label: "Bank Sampah", icon: Coins, permission: "manager" },
-  { to: "/residual", label: "Residu", icon: Trash2, permission: "recorder" },
+  { to: "/residual", label: "Residu", icon: Trash2, },
   { to: "/audits", label: "Audit", icon: ClipboardCheck },
-  { to: "/findings", label: "Temuan", icon: AlertTriangle, permission: "recorder" },
-  { to: "/activities", label: "Kegiatan", icon: CalendarHeart, permission: "recorder" },
+  { to: "/findings", label: "Temuan", icon: AlertTriangle, },
+  { to: "/activities", label: "Kegiatan", icon: CalendarHeart, },
   { to: "/reports", label: "Laporan", icon: FileBarChart },
   { to: "/qr", label: "QR Code", icon: QrCode, permission: "manager" },
   { to: "/master-data", label: "Master Data", icon: Database, permission: "manager" },
@@ -107,7 +107,7 @@ export function AppShell({
   actions?: ReactNode;
   children: ReactNode;
 }) {
-  const { user, roles, canRecord, isManager } = useAuthProfile();
+  const { user, roles, canInputWaste: canRecord, isManager } = useAuthProfile();
   const navigate = useNavigate();
   const router = useRouter();
   const queryClient = useQueryClient();
