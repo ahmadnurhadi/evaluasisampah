@@ -34,7 +34,7 @@ type NavItem = { to: string; label: string; icon: typeof Leaf; permission?: "rec
 
 export const NAV_ITEMS: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/input", label: "Input Sampah", icon: PlusCircle, },
+  { to: "/input", label: "Input Sampah", icon: PlusCircle, permission: "recorder" },
   { to: "/collection", label: "Pengumpulan", icon: Truck, },
   { to: "/batches", label: "Batch Sampah", icon: Boxes },
   { to: "/sorting", label: "Pemilahan", icon: SplitSquareHorizontal, },
