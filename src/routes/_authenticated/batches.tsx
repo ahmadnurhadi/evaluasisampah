@@ -6,7 +6,7 @@ import { AppShell } from "@/components/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useAuthProfile } from "@/hooks/use-auth";
+import { useSchoolScope } from "@/components/school-scope";
 import { supabase } from "@/integrations/supabase/client";
 import {
   CATEGORY_LABEL,
@@ -31,9 +31,7 @@ export const Route = createFileRoute("/_authenticated/batches")({
 const STAGES = Object.keys(STAGE_LABEL) as BatchStage[];
 
 function BatchesPage() {
-  const { user, roles } = useAuthProfile();
-  const schoolId = user?.profile?.school_id ?? undefined;
-  const canViewAll = roles.includes("super_admin");
+  const { schoolId, schools, isSuperAdmin: canViewAll } = useSchoolScope();
   const [search, setSearch] = useState("");
   const [stage, setStage] = useState("all");
 
@@ -43,7 +41,7 @@ function BatchesPage() {
     queryFn: async () => {
       let request = supabase
         .from("waste_batches")
-        .select("id, batch_code, initial_weight_kg, stage, generated_at, collected_at, notes, locations(name), waste_sources(name), waste_records(category, weight_kg, recorded_at), waste_movements(id, stage, description, weight_kg, occurred_at), waste_collections(id, actual_weight_kg, collected_at, collector_name), waste_sorting(id, category, weight_kg, sorted_at), waste_processing(id, method, input_weight_kg, output_weight_kg, processed_at), waste_utilization(id, utilization_type, weight_kg, used_at), waste_sales(id, transaction_code, weight_kg, total_value, sold_at), residual_disposals(id, weight_kg, destination, disposed_at)")
+        .select("id, school_id, batch_code, initial_weight_kg, stage, generated_at, collected_at, notes, locations(name), waste_sources(name), waste_records(category, weight_kg, recorded_at), waste_movements(id, stage, description, weight_kg, occurred_at), waste_collections(id, actual_weight_kg, collected_at, collector_name), waste_sorting(id, category, weight_kg, sorted_at), waste_processing(id, method, input_weight_kg, output_weight_kg, processed_at), waste_utilization(id, utilization_type, weight_kg, used_at), waste_sales(id, transaction_code, weight_kg, total_value, sold_at), residual_disposals(id, weight_kg, destination, disposed_at)")
         .is("deleted_at", null)
         .order("generated_at", { ascending: false })
         .limit(100);
@@ -164,6 +162,7 @@ function BatchesPage() {
             const source = Array.isArray(batch.waste_sources)
               ? batch.waste_sources[0]
               : batch.waste_sources;
+            const schoolName = schools.find((school) => school.id === batch.school_id)?.name;
 
             return (
               <article key={batch.id} className="eco-surface overflow-hidden">
@@ -176,6 +175,7 @@ function BatchesPage() {
                     <p className="mt-1 text-xs text-muted-foreground">
                       Dibuat {fmtDateTime(batch.generated_at)}
                     </p>
+                    {schoolName ? <p className="text-xs text-muted-foreground">{schoolName}</p> : null}
                   </div>
                   <p className="font-display text-lg font-bold">{fmtKg(Number(batch.initial_weight_kg))}</p>
                 </div>

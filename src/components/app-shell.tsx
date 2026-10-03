@@ -29,6 +29,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuthProfile } from "@/hooks/use-auth";
 import { ROLE_LABEL } from "@/lib/waste";
 import { cn } from "@/lib/utils";
+import { useSchoolScope } from "@/components/school-scope";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type NavItem = { to: string; label: string; icon: typeof Leaf; permission?: "recorder" | "manager" };
 
@@ -108,6 +110,7 @@ export function AppShell({
   children: ReactNode;
 }) {
   const { user, roles, canInputWaste: canRecord, isManager } = useAuthProfile();
+  const schoolScope = useSchoolScope();
   const navigate = useNavigate();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -173,6 +176,19 @@ export function AppShell({
               <p className="truncate text-xs text-muted-foreground">{description}</p>
             ) : null}
           </div>
+          {schoolScope.isSuperAdmin ? (
+            <Select value={schoolScope.schoolId ?? "all"} onValueChange={(value) => schoolScope.setSchoolId(value === "all" ? "" : value)}>
+              <SelectTrigger aria-label="Lingkup sekolah" className="w-28 shrink-0 sm:w-48">
+                <SelectValue placeholder="Pilih sekolah" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Semua sekolah</SelectItem>
+                {schoolScope.schools.map((school) => (
+                  <SelectItem key={school.id} value={school.id}>{school.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : null}
           {actions}
         </header>
         <main className="mx-auto w-full max-w-7xl px-4 py-5 pb-24">{children}</main>

@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuthProfile } from "@/hooks/use-auth";
+import { useSchoolScope } from "@/components/school-scope";
 import { supabase } from "@/integrations/supabase/client";
 import { invalidateWasteQueries } from "@/lib/query-invalidation";
 import {
@@ -82,29 +83,12 @@ function initialForm(): OutcomeForm {
 export function WasteOutcomePage({ kind }: { kind: WasteOutcomeKind }) {
   const definition = KINDS[kind];
   const Icon = definition.icon;
-  const { user, roles, canRecord, isManager } = useAuthProfile();
+  const { canRecord, isManager } = useAuthProfile();
+  const { schoolId, schools, isSuperAdmin } = useSchoolScope();
   const queryClient = useQueryClient();
-  const profileSchoolId = user?.profile?.school_id ?? undefined;
-  const isSuperAdmin = roles.includes("super_admin");
-  const [schoolSelection, setSchoolSelection] = useState("");
-  const schoolId = isSuperAdmin ? schoolSelection || profileSchoolId : profileSchoolId;
   const [form, setForm] = useState<OutcomeForm>(initialForm);
   const recordAt = kind === "processing" ? "processed_at" : kind === "utilization" ? "used_at" : kind === "sales" ? "sold_at" : "disposed_at";
   const canSubmit = canRecord && (kind !== "sales" || isManager);
-
-  const schoolsQuery = useQuery({
-    queryKey: ["outcome-schools"],
-    enabled: isSuperAdmin,
-    queryFn: async () => {
-      const { data, error } = await supabase.from("schools").select("id, name").is("deleted_at", null).order("name");
-      if (error) throw error;
-      return data ?? [];
-    },
-  });
-
-  useEffect(() => {
-    if (!schoolSelection && profileSchoolId) setSchoolSelection(profileSchoolId);
-  }, [profileSchoolId, schoolSelection]);
 
   const batchesQuery = useQuery({
     queryKey: ["outcome-batches", kind, schoolId],
@@ -170,7 +154,7 @@ export function WasteOutcomePage({ kind }: { kind: WasteOutcomeKind }) {
         if (schoolId) request = request.eq("waste_batches.school_id", schoolId);
         const { data, error } = await request;
         if (error) throw error;
-        return (data ?? []).map((row) => ({ id: row.id, batch: row.waste_batches.batch_code, date: row.processed_at, weight: row.input_weight_kg, detail: `${METHOD_LABEL[row.method]} · output ${fmtKg(row.output_weight_kg)}` }));
+        return (data ?? []).map((row) => ({ id: row.id, schoolId: row.waste_batches.school_id, batch: row.waste_batches.batch_code, date: row.processed_at, weight: row.input_weight_kg, detail: `${METHOD_LABEL[row.method]} · output ${fmtKg(row.output_weight_kg)}` }));
       }
       if (kind === "utilization") {
         let request = supabase.from("waste_utilization")
@@ -179,7 +163,7 @@ export function WasteOutcomePage({ kind }: { kind: WasteOutcomeKind }) {
         if (schoolId) request = request.eq("waste_batches.school_id", schoolId);
         const { data, error } = await request;
         if (error) throw error;
-        return (data ?? []).map((row) => ({ id: row.id, batch: row.waste_batches.batch_code, date: row.used_at, weight: row.weight_kg, detail: `${row.utilization_type} · ${fmtRp(row.economic_value)}` }));
+        return (data ?? []).map((row) => ({ id: row.id, schoolId: row.waste_batches.school_id, batch: row.waste_batches.batch_code, date: row.used_at, weight: row.weight_kg, detail: `${row.utilization_type} · ${fmtRp(row.economic_value)}` }));
       }
       if (kind === "sales") {
         let request = supabase.from("waste_sales")
@@ -188,7 +172,7 @@ export function WasteOutcomePage({ kind }: { kind: WasteOutcomeKind }) {
         if (schoolId) request = request.eq("waste_batches.school_id", schoolId);
         const { data, error } = await request;
         if (error) throw error;
-        return (data ?? []).map((row) => ({ id: row.id, batch: row.waste_batches?.batch_code ?? row.transaction_code, date: row.sold_at, weight: row.weight_kg, detail: `${fmtRp(Number(row.total_value ?? 0))} · ${PAYMENT_LABEL[row.payment_status]}` }));
+        return (data ?? []).map((row) => ({ id: row.id, schoolId: row.waste_batches?.school_id ?? null, batch: row.waste_batches?.batch_code ?? row.transaction_code, date: row.sold_at, weight: row.weight_kg, detail: `${fmtRp(Number(row.total_value ?? 0))} · ${PAYMENT_LABEL[row.payment_status]}` }));
       }
       let request = supabase.from("residual_disposals")
         .select("id, weight_kg, destination, disposal_method, disposed_at, waste_batches!inner(batch_code, school_id)")
@@ -196,12 +180,22 @@ export function WasteOutcomePage({ kind }: { kind: WasteOutcomeKind }) {
       if (schoolId) request = request.eq("waste_batches.school_id", schoolId);
       const { data, error } = await request;
       if (error) throw error;
-      return (data ?? []).map((row) => ({ id: row.id, batch: row.waste_batches.batch_code, date: row.disposed_at, weight: row.weight_kg, detail: `${row.destination} · ${row.disposal_method}` }));
+      return (data ?? []).map((row) => ({ id: row.id, schoolId: row.waste_batches.school_id, batch: row.waste_batches.batch_code, date: row.disposed_at, weight: row.weight_kg, detail: `${row.destination} · ${row.disposal_method}` }));
     },
   });
 
   const selectedBatch = batches.find((batch) => batch.id === form.batchId);
   const selectedType = typesQuery.data?.find((type) => type.id === form.typeId);
+  const recordsBySchool = new Map<string, { name: string; records: NonNullable<typeof recordsQuery.data> }>();
+  for (const record of recordsQuery.data ?? []) {
+    const schoolKey = record.schoolId ?? "unknown";
+    const group = recordsBySchool.get(schoolKey) ?? {
+      name: schools.find((school) => school.id === record.schoolId)?.name ?? "Sekolah tidak diketahui",
+      records: [],
+    };
+    group.records.push(record);
+    recordsBySchool.set(schoolKey, group);
+  }
 
   useEffect(() => {
     if (kind === "sales" && selectedType) {
@@ -281,15 +275,6 @@ export function WasteOutcomePage({ kind }: { kind: WasteOutcomeKind }) {
       <div className="grid gap-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(20rem,1.1fr)]">
         {canSubmit ? (
           <form className="eco-surface space-y-5 p-4 sm:p-6" onSubmit={(event) => { event.preventDefault(); mutation.mutate(); }}>
-            {isSuperAdmin ? (
-              <div className="space-y-2">
-                <Label htmlFor={`${kind}-school`}>Sekolah</Label>
-                <Select value={schoolId ?? ""} onValueChange={setSchoolSelection}>
-                  <SelectTrigger id={`${kind}-school`}><SelectValue placeholder="Pilih sekolah" /></SelectTrigger>
-                  <SelectContent>{(schoolsQuery.data ?? []).map((school) => <SelectItem key={school.id} value={school.id}>{school.name}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-            ) : null}
             <div className="flex items-center gap-3 border-b border-border pb-4">
               <span className="flex size-10 items-center justify-center rounded-lg bg-accent text-accent-foreground"><Icon className="size-5" /></span>
               <div><h2 className="font-display text-base font-bold">Catat {definition.noun}</h2><p className="text-xs text-muted-foreground">Validasi massa dilakukan di database.</p></div>
@@ -349,7 +334,7 @@ export function WasteOutcomePage({ kind }: { kind: WasteOutcomeKind }) {
         <section className="eco-surface min-w-0 p-4 sm:p-6">
           <div className="border-b border-border pb-4"><h2 className="font-display text-base font-bold">Riwayat {definition.noun}</h2><p className="text-xs text-muted-foreground">50 transaksi terakhir</p></div>
           {recordsQuery.isError ? <p role="alert" className="py-6 text-sm text-destructive">Riwayat gagal dimuat.</p> : recordsQuery.isLoading ? <p className="py-6 text-sm text-muted-foreground">Memuat riwayat...</p> : recordsQuery.data?.length ? (
-            <div className="divide-y divide-border">{recordsQuery.data.map((record) => <div key={record.id} className="flex items-start justify-between gap-3 py-3"><div className="min-w-0"><p className="truncate text-sm font-semibold">{record.batch}</p><p className="text-xs text-muted-foreground">{record.detail} · {fmtDateTime(record.date)}</p></div><p className="shrink-0 text-sm font-bold">{fmtKg(Number(record.weight))}</p></div>)}</div>
+            <div className="divide-y divide-border">{[...recordsBySchool.entries()].map(([schoolIdKey, group]) => <section key={schoolIdKey}><h3 className="bg-muted/40 px-3 py-2 text-xs font-semibold">{group.name} · {group.records.length} catatan</h3><div className="divide-y divide-border">{group.records.map((record) => <div key={record.id} className="flex items-start justify-between gap-3 py-3"><div className="min-w-0"><p className="truncate text-sm font-semibold">{record.batch}</p><p className="text-xs text-muted-foreground">{record.detail} · {fmtDateTime(record.date)}</p></div><p className="shrink-0 text-sm font-bold">{fmtKg(Number(record.weight))}</p></div>)}</div></section>)}</div>
           ) : <p className="py-8 text-center text-sm text-muted-foreground">Belum ada transaksi.</p>}
           {batchesQuery.isError || partnersQuery.isError ? <p role="alert" className="mt-3 text-xs text-destructive">Data pendukung gagal dimuat.</p> : null}
         </section>

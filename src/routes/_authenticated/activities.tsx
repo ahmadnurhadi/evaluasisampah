@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { CalendarHeart, LoaderCircle, Plus, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuthProfile } from "@/hooks/use-auth";
+import { useSchoolScope } from "@/components/school-scope";
 import { supabase } from "@/integrations/supabase/client";
 import { invalidateActivityQueries } from "@/lib/query-invalidation";
 import { fmtDate, fmtKg } from "@/lib/waste";
@@ -21,12 +22,9 @@ export const Route = createFileRoute("/_authenticated/activities")({
 });
 
 function ActivitiesPage() {
-  const { user, roles, canRecord } = useAuthProfile();
+  const { user, canRecord } = useAuthProfile();
   const queryClient = useQueryClient();
-  const profileSchoolId = user?.profile?.school_id ?? undefined;
-  const isSuperAdmin = roles.includes("super_admin");
-  const [schoolSelection, setSchoolSelection] = useState("");
-  const schoolId = isSuperAdmin ? schoolSelection || profileSchoolId : profileSchoolId;
+  const { schoolId, isSuperAdmin } = useSchoolScope();
   const [name, setName] = useState("");
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [locationId, setLocationId] = useState("");
@@ -39,19 +37,7 @@ function ActivitiesPage() {
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [resultDrafts, setResultDrafts] = useState<Record<string, string>>({});
 
-  useEffect(() => {
-    if (!schoolSelection && profileSchoolId) setSchoolSelection(profileSchoolId);
-  }, [profileSchoolId, schoolSelection]);
 
-  const schoolsQuery = useQuery({
-    queryKey: ["activity-schools"],
-    enabled: isSuperAdmin,
-    queryFn: async () => {
-      const { data, error } = await supabase.from("schools").select("id, name").is("deleted_at", null).order("name");
-      if (error) throw error;
-      return data ?? [];
-    },
-  });
   const locationsQuery = useQuery({
     queryKey: ["activity-locations", schoolId],
     enabled: Boolean(schoolId),
@@ -137,7 +123,6 @@ function ActivitiesPage() {
       <div className="grid gap-5 xl:grid-cols-[minmax(20rem,0.8fr)_minmax(0,1.2fr)]">
         {canRecord ? (
           <form className="eco-surface space-y-4 p-4 sm:p-5" onSubmit={(event) => { event.preventDefault(); createActivity.mutate(); }}>
-            {isSuperAdmin ? <div className="space-y-2"><Label htmlFor="activity-school">Sekolah</Label><Select value={schoolId ?? ""} onValueChange={setSchoolSelection}><SelectTrigger id="activity-school"><SelectValue placeholder="Pilih sekolah" /></SelectTrigger><SelectContent>{(schoolsQuery.data ?? []).map((school) => <SelectItem key={school.id} value={school.id}>{school.name}</SelectItem>)}</SelectContent></Select></div> : null}
             <div className="flex items-center gap-2"><CalendarHeart className="size-5 text-primary" /><h2 className="font-display font-bold">Kegiatan baru</h2></div>
             <div className="space-y-2"><Label htmlFor="activity-name">Nama kegiatan</Label><Input id="activity-name" required value={name} onChange={(event) => setName(event.target.value)} placeholder="Contoh: Jumat Bersih" /></div>
             <div className="grid gap-3 sm:grid-cols-2"><div className="space-y-2"><Label htmlFor="activity-date">Tanggal</Label><Input id="activity-date" type="date" required value={date} onChange={(event) => setDate(event.target.value)} /></div><div className="space-y-2"><Label htmlFor="activity-organizer">Penyelenggara</Label><Input id="activity-organizer" value={organizer} onChange={(event) => setOrganizer(event.target.value)} /></div></div>
@@ -147,7 +132,7 @@ function ActivitiesPage() {
             <div className="space-y-2"><Label htmlFor="activity-description">Deskripsi</Label><textarea id="activity-description" value={description} onChange={(event) => setDescription(event.target.value)} rows={3} maxLength={2000} className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm outline-none focus-visible:ring-1 focus-visible:ring-ring" /></div>
             <div className="space-y-2"><Label htmlFor="activity-result">Hasil</Label><textarea id="activity-result" value={result} onChange={(event) => setResult(event.target.value)} rows={2} maxLength={1500} className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm outline-none focus-visible:ring-1 focus-visible:ring-ring" /></div>
             <PhotoUpload value={photoUrl} onChange={setPhotoUrl} label="Foto kegiatan (opsional)" />
-            <Button type="submit" size="lg" className="h-12 w-full" disabled={createActivity.isPending || !schoolId || locationsQuery.isError || schoolsQuery.isError}>{createActivity.isPending ? <LoaderCircle className="animate-spin" /> : <Plus />}Simpan kegiatan</Button>
+            <Button type="submit" size="lg" className="h-12 w-full" disabled={createActivity.isPending || !schoolId || locationsQuery.isError}>{createActivity.isPending ? <LoaderCircle className="animate-spin" /> : <Plus />}Simpan kegiatan</Button>
           </form>
         ) : null}
         <section className="eco-surface min-w-0 p-4 sm:p-6"><div className="border-b border-border pb-4"><h2 className="font-display text-base font-bold">Riwayat kegiatan</h2><p className="text-xs text-muted-foreground">Kegiatan dan peserta yang tercatat</p></div>{activitiesQuery.isError ? <p role="alert" className="py-6 text-sm text-destructive">Kegiatan gagal dimuat.</p> : activitiesQuery.isLoading ? <p className="py-6 text-sm text-muted-foreground">Memuat kegiatan...</p> : activitiesQuery.data?.length ? <div className="divide-y divide-border">{activitiesQuery.data.map((activity) => { const location = Array.isArray(activity.locations) ? activity.locations[0] : activity.locations; return <article key={activity.id} className="space-y-3 py-4"><div className="flex flex-wrap items-start justify-between gap-3"><div className="min-w-0"><h3 className="font-display font-bold">{activity.name}</h3><p className="text-xs text-muted-foreground">{fmtDate(activity.activity_date)} · {location?.name ?? "Area sekolah"} · {activity.organizer ?? "Penyelenggara"}</p></div><div className="text-right"><p className="text-sm font-semibold">{activity.participant_count} peserta</p><p className="text-xs text-muted-foreground">{fmtKg(Number(activity.waste_collected_kg))} terkumpul · {fmtKg(Number(activity.waste_utilized_kg))} dimanfaatkan</p></div></div>{activity.photo_url ? <EvidenceImage path={activity.photo_url} className="h-36 w-full rounded-md object-cover sm:w-56" alt={`Foto kegiatan ${activity.name}`} /> : null}{activity.description ? <p className="text-sm text-muted-foreground">{activity.description}</p> : null}<div className="flex flex-col gap-2 sm:flex-row">{canRecord ? <><Input aria-label={`Hasil kegiatan ${activity.name}`} value={resultDrafts[activity.id] ?? activity.result ?? ""} onChange={(event) => setResultDrafts((current) => ({ ...current, [activity.id]: event.target.value }))} placeholder="Hasil kegiatan" /><Button variant="outline" size="sm" disabled={saveResult.isPending} onClick={() => saveResult.mutate(activity.id)}><Save /> Simpan hasil</Button><Button variant="ghost" size="icon" title="Arsipkan kegiatan" aria-label={`Arsipkan ${activity.name}`} disabled={archiveActivity.isPending} onClick={() => archiveActivity.mutate(activity.id)}><Trash2 /></Button></> : <p className="text-sm">{activity.result || "Hasil belum dicatat"}</p>}</div>{activity.activity_participants.length ? <details className="text-sm"><summary className="cursor-pointer text-muted-foreground">Lihat peserta ({activity.activity_participants.length})</summary><p className="mt-2 text-xs text-muted-foreground">{activity.activity_participants.map((participant) => participant.name).join(", ")}</p></details> : null}</article>; })}</div> : <p className="py-8 text-center text-sm text-muted-foreground">Belum ada kegiatan.</p>}</section>

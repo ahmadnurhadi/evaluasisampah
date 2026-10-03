@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Database, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuthProfile } from "@/hooks/use-auth";
+import { useSchoolScope } from "@/components/school-scope";
 import { supabase } from "@/integrations/supabase/client";
 import { invalidateMasterDataQueries } from "@/lib/query-invalidation";
 import { CATEGORY_LABEL, CATEGORIES, type WasteCategory } from "@/lib/waste";
@@ -69,23 +70,13 @@ const FIELDS: Record<Section, Field[]> = {
 };
 
 function MasterDataPage() {
-  const { user, roles, isManager } = useAuthProfile();
+  const { roles, isManager } = useAuthProfile();
   const queryClient = useQueryClient();
   const isSuperAdmin = roles.includes("super_admin");
-  const profileSchoolId = user?.profile?.school_id ?? undefined;
-  const [schoolSelection, setSchoolSelection] = useState<string | null>(null);
-  const schoolId = isSuperAdmin
-    ? schoolSelection === null
-      ? profileSchoolId
-      : schoolSelection || undefined
-    : profileSchoolId;
+  const { schoolId, setSchoolId } = useSchoolScope();
   const [section, setSection] = useState<Section>("locations");
   const [editingId, setEditingId] = useState("");
   const [values, setValues] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    if (schoolSelection === null && profileSchoolId) setSchoolSelection(profileSchoolId);
-  }, [profileSchoolId, schoolSelection]);
 
   const schoolsQuery = useQuery({
     queryKey: ["master-school-options"],
@@ -206,7 +197,7 @@ function MasterDataPage() {
     <AppShell title="Master Data" description="Kelola sekolah dan konfigurasi pengelolaan sampah">
       {!isManager ? <div role="alert" className="eco-surface mb-4 p-4 text-sm">Pengelolaan master data hanya tersedia untuk administrator.</div> : null}
       <div className="space-y-4">
-        {isSuperAdmin ? <div className="eco-surface flex flex-wrap items-center gap-3 p-4"><Label htmlFor="master-school" className="min-w-24">Lingkup data</Label><Select value={schoolId ?? "global"} onValueChange={(value) => setSchoolSelection(value === "global" ? "" : value)}><SelectTrigger id="master-school" className="w-full sm:w-80"><SelectValue placeholder="Data global" /></SelectTrigger><SelectContent><SelectItem value="global" disabled={section === "locations" || section === "schools"}>Global</SelectItem>{(schoolsQuery.data ?? []).map((school) => <SelectItem key={school.id} value={school.id}>{school.name}</SelectItem>)}</SelectContent></Select><span className="text-xs text-muted-foreground">{globalScopeText}</span></div> : null}
+        {isSuperAdmin ? <div className="eco-surface flex flex-wrap items-center gap-3 p-4"><Label htmlFor="master-school" className="min-w-24">Lingkup data</Label><Select value={schoolId ?? "global"} onValueChange={(value) => setSchoolId(value === "global" ? "" : value)}><SelectTrigger id="master-school" className="w-full sm:w-80"><SelectValue placeholder="Data global" /></SelectTrigger><SelectContent><SelectItem value="global">Semua sekolah</SelectItem>{(schoolsQuery.data ?? []).map((school) => <SelectItem key={school.id} value={school.id}>{school.name}</SelectItem>)}</SelectContent></Select><span className="text-xs text-muted-foreground">{globalScopeText}</span></div> : null}
         <Tabs value={section} onValueChange={(value) => { setSection(value as Section); setEditingId(""); setValues({}); }}>
           <div className="overflow-x-auto"><TabsList className="w-max min-w-full justify-start">{SECTIONS.map((item) => <TabsTrigger key={item.id} value={item.id} disabled={item.id === "schools" && !isSuperAdmin}>{item.label}</TabsTrigger>)}</TabsList></div>
           {SECTIONS.map((item) => <TabsContent key={item.id} value={item.id}>

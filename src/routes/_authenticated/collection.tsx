@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuthProfile } from "@/hooks/use-auth";
+import { useSchoolScope } from "@/components/school-scope";
 import { supabase } from "@/integrations/supabase/client";
 import { invalidateWasteQueries } from "@/lib/query-invalidation";
 import { STAGE_LABEL, fmtDateTime, fmtKg } from "@/lib/waste";
@@ -29,10 +30,9 @@ function localDateTime() {
 }
 
 function CollectionPage() {
-  const { user, roles, canRecord } = useAuthProfile();
+  const { canRecord } = useAuthProfile();
+  const { schoolId, schools, isSuperAdmin } = useSchoolScope();
   const queryClient = useQueryClient();
-  const schoolId = user?.profile?.school_id ?? undefined;
-  const isSuperAdmin = roles.includes("super_admin");
   const [batchId, setBatchId] = useState("");
   const [actualWeight, setActualWeight] = useState("");
   const [estimatedWeight, setEstimatedWeight] = useState("");
@@ -46,7 +46,7 @@ function CollectionPage() {
     queryFn: async () => {
       let request = supabase
         .from("waste_batches")
-        .select("id, batch_code, initial_weight_kg, stage, locations(name)")
+        .select("id, school_id, batch_code, initial_weight_kg, stage, locations(name)")
         .in("stage", ["generated", "collected"])
         .is("deleted_at", null)
         .order("generated_at", { ascending: true });
@@ -147,7 +147,7 @@ function CollectionPage() {
                     const location = Array.isArray(batch.locations) ? batch.locations[0] : batch.locations;
                     return (
                       <SelectItem key={batch.id} value={batch.id}>
-                        {batch.batch_code} · {location?.name ?? "Lokasi"} · {fmtKg(Number(batch.initial_weight_kg))}
+                        {schools.find((school) => school.id === batch.school_id)?.name ?? "Sekolah"} · {batch.batch_code} · {location?.name ?? "Lokasi"} · {fmtKg(Number(batch.initial_weight_kg))}
                       </SelectItem>
                     );
                   })}
@@ -243,6 +243,7 @@ function CollectionPage() {
                 const batch = Array.isArray(collection.waste_batches)
                   ? collection.waste_batches[0]
                   : collection.waste_batches;
+                const schoolName = schools.find((school) => school.id === batch?.school_id)?.name;
                 return (
                   <div key={collection.id} className="flex items-start justify-between gap-3 py-3">
                     <div className="min-w-0">
@@ -250,6 +251,7 @@ function CollectionPage() {
                       <p className="text-xs text-muted-foreground">
                         {collection.collector_name || "Petugas"} · {fmtDateTime(collection.collected_at)}
                       </p>
+                      {schoolName ? <p className="text-xs text-muted-foreground">{schoolName}</p> : null}
                     </div>
                     <p className="shrink-0 text-sm font-bold">{fmtKg(Number(collection.actual_weight_kg ?? 0))}</p>
                   </div>

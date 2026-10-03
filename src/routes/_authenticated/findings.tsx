@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { AlertTriangle, LoaderCircle, Plus, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuthProfile } from "@/hooks/use-auth";
+import { useSchoolScope } from "@/components/school-scope";
 import { supabase } from "@/integrations/supabase/client";
 import { invalidateAuditQueries } from "@/lib/query-invalidation";
 import { FINDING_STATUS_LABEL, SEVERITY_LABEL, fmtDate, type FindingStatus, type Severity } from "@/lib/waste";
@@ -25,12 +26,9 @@ const STATUSES = Object.keys(FINDING_STATUS_LABEL) as FindingStatus[];
 const SEVERITIES = Object.keys(SEVERITY_LABEL) as Severity[];
 
 function FindingsPage() {
-  const { user, roles, canRecord, isManager } = useAuthProfile();
+  const { canRecord, isManager } = useAuthProfile();
   const queryClient = useQueryClient();
-  const schoolId = user?.profile?.school_id ?? undefined;
-  const isSuperAdmin = roles.includes("super_admin");
-  const [schoolSelection, setSchoolSelection] = useState("");
-  const activeSchoolId = isSuperAdmin ? schoolSelection || schoolId : schoolId;
+  const { schoolId: activeSchoolId, isSuperAdmin } = useSchoolScope();
   const [locationId, setLocationId] = useState("");
   const [auditId, setAuditId] = useState("");
   const [category, setCategory] = useState("kebersihan");
@@ -45,19 +43,7 @@ function FindingsPage() {
   const [planPic, setPlanPic] = useState("");
   const [planDueDate, setPlanDueDate] = useState("");
 
-  useEffect(() => {
-    if (!schoolSelection && schoolId) setSchoolSelection(schoolId);
-  }, [schoolId, schoolSelection]);
 
-  const schoolsQuery = useQuery({
-    queryKey: ["finding-schools"],
-    enabled: isSuperAdmin,
-    queryFn: async () => {
-      const { data, error } = await supabase.from("schools").select("id, name").is("deleted_at", null).order("name");
-      if (error) throw error;
-      return data ?? [];
-    },
-  });
   const locationsQuery = useQuery({
     queryKey: ["finding-locations", activeSchoolId],
     enabled: Boolean(activeSchoolId),
@@ -162,7 +148,6 @@ function FindingsPage() {
         {canRecord ? (
           <div className="space-y-5">
             <form className="eco-surface space-y-4 p-4 sm:p-5" onSubmit={(event) => { event.preventDefault(); saveFinding.mutate(); }}>
-              {isSuperAdmin ? <div className="space-y-2"><Label htmlFor="finding-school">Sekolah</Label><Select value={activeSchoolId ?? ""} onValueChange={setSchoolSelection}><SelectTrigger id="finding-school"><SelectValue placeholder="Pilih sekolah" /></SelectTrigger><SelectContent>{(schoolsQuery.data ?? []).map((school) => <SelectItem key={school.id} value={school.id}>{school.name}</SelectItem>)}</SelectContent></Select></div> : null}
               <div className="flex items-center gap-2"><AlertTriangle className="size-5 text-amber-600" /><h2 className="font-display font-bold">Temuan baru</h2></div>
               <div className="space-y-2"><Label htmlFor="finding-location">Lokasi</Label><Select value={locationId} onValueChange={setLocationId}><SelectTrigger id="finding-location"><SelectValue placeholder="Pilih lokasi" /></SelectTrigger><SelectContent>{(locationsQuery.data ?? []).map((location) => <SelectItem key={location.id} value={location.id}>{location.name}</SelectItem>)}</SelectContent></Select></div>
               <div className="space-y-2"><Label htmlFor="finding-audit">Audit terkait (opsional)</Label><Select value={auditId || "none"} onValueChange={(value) => setAuditId(value === "none" ? "" : value)}><SelectTrigger id="finding-audit"><SelectValue placeholder="Pilih audit" /></SelectTrigger><SelectContent><SelectItem value="none">Tanpa audit</SelectItem>{(auditsQuery.data ?? []).map((audit) => <SelectItem key={audit.id} value={audit.id}>{fmtDate(audit.audited_at)}</SelectItem>)}</SelectContent></Select></div>

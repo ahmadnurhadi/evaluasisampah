@@ -7,6 +7,7 @@ export type DashboardFilters = {
   locationId?: string;
   category?: WasteCategory;
   sourceId?: string;
+  schoolId?: string;
 };
 
 type DashboardMetrics = {
@@ -190,6 +191,7 @@ async function fetchLiveDashboard(f: DashboardFilters): Promise<DashboardMetrics
     .gte("recorded_at", startOfDay(f.from))
     .lte("recorded_at", endOfDay(f.to));
   if (f.locationId) records = records.eq("location_id", f.locationId);
+  if (f.schoolId) records = records.eq("school_id", f.schoolId);
   if (f.category) records = records.eq("category", f.category);
   if (f.sourceId) records = records.eq("source_id", f.sourceId);
   const prevSpanMs = new Date(f.to).getTime() - new Date(f.from).getTime();
@@ -202,40 +204,41 @@ async function fetchLiveDashboard(f: DashboardFilters): Promise<DashboardMetrics
     .gte("recorded_at", startOfDay(prevFrom))
     .lte("recorded_at", endOfDay(prevTo));
   if (f.locationId) previousRecords = previousRecords.eq("location_id", f.locationId);
+  if (f.schoolId) previousRecords = previousRecords.eq("school_id", f.schoolId);
   if (f.category) previousRecords = previousRecords.eq("category", f.category);
   if (f.sourceId) previousRecords = previousRecords.eq("source_id", f.sourceId);
 
   const [recordRows, prevRows, processingRows, utilRows, saleRows, residualRows, sourceRows] = await Promise.all([
     fetchAllRows((start, end) => records.range(start, end)),
     fetchAllRows((start, end) => previousRecords.range(start, end)),
-    fetchAllRows((start, end) => supabase
-      .from("waste_processing")
-      .select("input_weight_kg, output_weight_kg, method, processed_at")
-      .is("deleted_at", null)
-      .gte("processed_at", startOfDay(f.from))
-      .lte("processed_at", endOfDay(f.to))
-      .range(start, end)),
-    fetchAllRows((start, end) => supabase
-      .from("waste_utilization")
-      .select("weight_kg, economic_value, utilization_type, used_at")
-      .is("deleted_at", null)
-      .gte("used_at", startOfDay(f.from))
-      .lte("used_at", endOfDay(f.to))
-      .range(start, end)),
-    fetchAllRows((start, end) => supabase
-      .from("waste_sales")
-      .select("weight_kg, total_value, category, sold_at")
-      .is("deleted_at", null)
-      .gte("sold_at", startOfDay(f.from))
-      .lte("sold_at", endOfDay(f.to))
-      .range(start, end)),
-    fetchAllRows((start, end) => supabase
-      .from("residual_disposals")
-      .select("weight_kg, disposed_at")
-      .is("deleted_at", null)
-      .gte("disposed_at", startOfDay(f.from))
-      .lte("disposed_at", endOfDay(f.to))
-      .range(start, end)),
+    fetchAllRows((start, end) => {
+      let request = supabase.from("waste_processing")
+        .select("input_weight_kg, output_weight_kg, method, processed_at, waste_batches!inner(school_id)")
+        .is("deleted_at", null).gte("processed_at", startOfDay(f.from)).lte("processed_at", endOfDay(f.to));
+      if (f.schoolId) request = request.eq("waste_batches.school_id", f.schoolId);
+      return request.range(start, end);
+    }),
+    fetchAllRows((start, end) => {
+      let request = supabase.from("waste_utilization")
+        .select("weight_kg, economic_value, utilization_type, used_at, waste_batches!inner(school_id)")
+        .is("deleted_at", null).gte("used_at", startOfDay(f.from)).lte("used_at", endOfDay(f.to));
+      if (f.schoolId) request = request.eq("waste_batches.school_id", f.schoolId);
+      return request.range(start, end);
+    }),
+    fetchAllRows((start, end) => {
+      let request = supabase.from("waste_sales")
+        .select("weight_kg, total_value, category, sold_at, waste_batches(school_id)")
+        .is("deleted_at", null).gte("sold_at", startOfDay(f.from)).lte("sold_at", endOfDay(f.to));
+      if (f.schoolId) request = request.eq("waste_batches.school_id", f.schoolId);
+      return request.range(start, end);
+    }),
+    fetchAllRows((start, end) => {
+      let request = supabase.from("residual_disposals")
+        .select("weight_kg, disposed_at, waste_batches!inner(school_id)")
+        .is("deleted_at", null).gte("disposed_at", startOfDay(f.from)).lte("disposed_at", endOfDay(f.to));
+      if (f.schoolId) request = request.eq("waste_batches.school_id", f.schoolId);
+      return request.range(start, end);
+    }),
     fetchAllRows((start, end) => supabase
       .from("waste_sources")
       .select("id, name")

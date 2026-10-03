@@ -1,13 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Download, FileBarChart, Printer } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useAuthProfile } from "@/hooks/use-auth";
+import { useSchoolScope } from "@/components/school-scope";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { CATEGORY_LABEL, fmtDateTime, fmtKg, fmtPct, fmtRp, type WasteCategory } from "@/lib/waste";
@@ -49,29 +49,11 @@ function csvCell(value: string | number) {
 }
 
 function ReportsPage() {
-  const { user, roles } = useAuthProfile();
-  const isSuperAdmin = roles.includes("super_admin");
-  const profileSchoolId = user?.profile?.school_id ?? undefined;
-  const [schoolSelection, setSchoolSelection] = useState("");
-  const schoolId = isSuperAdmin ? schoolSelection || profileSchoolId : profileSchoolId;
+  const { schoolId, isSuperAdmin } = useSchoolScope();
   const [kind, setKind] = useState<ReportKind>("generated");
   const [from, setFrom] = useState(monthStart);
   const [to, setTo] = useState(today);
   const [category, setCategory] = useState("all");
-
-  useEffect(() => {
-    if (!schoolSelection && profileSchoolId) setSchoolSelection(profileSchoolId);
-  }, [profileSchoolId, schoolSelection]);
-
-  const schoolsQuery = useQuery({
-    queryKey: ["report-schools"],
-    enabled: isSuperAdmin,
-    queryFn: async () => {
-      const { data, error } = await supabase.from("schools").select("id, name").is("deleted_at", null).order("name");
-      if (error) throw error;
-      return data ?? [];
-    },
-  });
 
   const reportQuery = useQuery({
     queryKey: ["report", kind, from, to, category, schoolId],
@@ -184,9 +166,8 @@ function ReportsPage() {
 
   return (
     <AppShell title="Laporan" description="Laporan berbasis data sekolah untuk rentang tanggal terpilih">
-      {!schoolId ? <div role="alert" className="eco-surface mb-4 p-4 text-sm">Akun belum terhubung ke sekolah.</div> : null}
+      {!schoolId ? <div role="status" className="eco-surface mb-4 p-4 text-sm">{isSuperAdmin ? "Pilih sekolah di menu atas untuk melihat laporan terperinci." : "Akun belum terhubung ke sekolah."}</div> : null}
       <div className="print-hidden eco-surface mb-4 grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-[minmax(13rem,1fr)_minmax(12rem,1fr)_minmax(14rem,1.2fr)_auto_auto]">
-        {isSuperAdmin ? <div className="space-y-2"><Label htmlFor="report-school">Sekolah</Label><Select value={schoolId ?? ""} onValueChange={setSchoolSelection}><SelectTrigger id="report-school"><SelectValue placeholder="Pilih sekolah" /></SelectTrigger><SelectContent>{(schoolsQuery.data ?? []).map((school) => <SelectItem key={school.id} value={school.id}>{school.name}</SelectItem>)}</SelectContent></Select></div> : null}
         <div className="space-y-2"><Label htmlFor="report-type">Jenis laporan</Label><Select value={kind} onValueChange={(value) => setKind(value as ReportKind)}><SelectTrigger id="report-type"><SelectValue /></SelectTrigger><SelectContent>{REPORTS.map((report) => <SelectItem key={report.value} value={report.value}>{report.label}</SelectItem>)}</SelectContent></Select></div>
         <div className="space-y-2"><Label htmlFor="report-from">Dari</Label><Input id="report-from" type="date" value={from} onChange={(event) => setFrom(event.target.value)} /></div>
         <div className="space-y-2"><Label htmlFor="report-to">Sampai</Label><Input id="report-to" type="date" value={to} onChange={(event) => setTo(event.target.value)} /></div>

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { LoaderCircle, Plus, SplitSquareHorizontal, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuthProfile } from "@/hooks/use-auth";
+import { useSchoolScope } from "@/components/school-scope";
 import { supabase } from "@/integrations/supabase/client";
 import { invalidateWasteQueries } from "@/lib/query-invalidation";
 import { CATEGORY_LABEL, CATEGORIES, fmtKg, type WasteCategory } from "@/lib/waste";
@@ -27,46 +28,25 @@ type SortLine = { id: number; category: WasteCategory; wasteTypeId: string; weig
 const EMPTY_LINE = (): SortLine => ({ id: Date.now() + Math.random(), category: "organic", wasteTypeId: "", weight: "" });
 
 function SortingPage() {
-  const { user, canRecord } = useAuthProfile();
+  const { canRecord } = useAuthProfile();
   const queryClient = useQueryClient();
-  const roles = user?.roles ?? [];
-  const isSuperAdmin = roles.includes("super_admin");
-  const profileSchoolId = user?.profile?.school_id ?? undefined;
-  const [schoolSelection, setSchoolSelection] = useState("");
-  const schoolId = isSuperAdmin ? schoolSelection || profileSchoolId : profileSchoolId;
+  const { schoolId, isSuperAdmin } = useSchoolScope();
   const [batchId, setBatchId] = useState("");
   const [lines, setLines] = useState<SortLine[]>([EMPTY_LINE()]);
   const [notes, setNotes] = useState("");
 
-  const schoolsQuery = useQuery({
-    queryKey: ["sorting-schools"],
-    enabled: isSuperAdmin,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("schools")
-        .select("id, name")
-        .is("deleted_at", null)
-        .order("name");
-      if (error) throw error;
-      return data ?? [];
-    },
-  });
-
-  useEffect(() => {
-    if (!schoolSelection && profileSchoolId) setSchoolSelection(profileSchoolId);
-  }, [profileSchoolId, schoolSelection]);
-
   const batchesQuery = useQuery({
     queryKey: ["sortable-batches", schoolId],
-    enabled: Boolean(schoolId),
+    enabled: Boolean(schoolId) || isSuperAdmin,
     queryFn: async () => {
-      const { data, error } = await supabase
+      let request = supabase
         .from("waste_batches")
         .select("id, batch_code, initial_weight_kg, stage, waste_sorting(id), waste_collections(actual_weight_kg)")
-        .eq("school_id", schoolId!)
         .in("stage", ["collected", "weighed"])
         .is("deleted_at", null)
         .order("generated_at", { ascending: true });
+      if (schoolId) request = request.eq("school_id", schoolId);
+      const { data, error } = await request;
       if (error) throw error;
       return (data ?? []).filter((batch) =>
         batch.waste_sorting.length === 0 && batch.waste_collections.length > 0,
@@ -146,19 +126,6 @@ function SortingPage() {
               saveSorting.mutate();
             }}
           >
-            {isSuperAdmin ? (
-              <div className="space-y-2">
-                <Label htmlFor="sorting-school">Sekolah</Label>
-                <Select value={schoolId ?? ""} onValueChange={setSchoolSelection}>
-                  <SelectTrigger id="sorting-school"><SelectValue placeholder="Pilih sekolah" /></SelectTrigger>
-                  <SelectContent>
-                    {(schoolsQuery.data ?? []).map((school) => (
-                      <SelectItem key={school.id} value={school.id}>{school.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            ) : null}
             <div className="flex items-center gap-3 border-b border-border pb-4">
               <span className="flex size-10 items-center justify-center rounded-lg bg-accent text-accent-foreground">
                 <SplitSquareHorizontal className="size-5" />
@@ -285,7 +252,7 @@ function SortingPage() {
               type="submit"
               size="lg"
               className="h-12 w-full sm:w-auto"
-              disabled={!canRecord || !selectedBatch || isOverweight || saveSorting.isPending || batchesQuery.isError || schoolsQuery.isError}
+              disabled={!canRecord || !selectedBatch || isOverweight || saveSorting.isPending || batchesQuery.isError}
             >
               {saveSorting.isPending ? <LoaderCircle className="animate-spin" /> : <SplitSquareHorizontal />}
               Simpan hasil pemilahan

@@ -22,6 +22,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
+import { useSchoolScope } from "@/components/school-scope";
 import { fetchDashboard, type DashboardFilters } from "@/lib/dashboard";
 import { CATEGORIES, CATEGORY_LABEL, fmtKg, fmtPct, fmtRp, type WasteCategory } from "@/lib/waste";
 
@@ -71,21 +72,25 @@ function Kpi({ label, value, hint }: { label: string; value: string; hint?: stri
 
 function Dashboard() {
   const [filters, setFilters] = useState<DashboardFilters>({ from: daysAgo(30), to: today() });
+  const { schoolId } = useSchoolScope();
 
   const { data: masters } = useQuery({
-    queryKey: ["dashboard-masters"],
+    queryKey: ["dashboard-masters", schoolId],
     queryFn: async () => {
-      const [{ data: locations }, { data: sources }] = await Promise.all([
-        supabase.from("locations").select("id, name").is("deleted_at", null).order("name"),
-        supabase.from("waste_sources").select("id, name").is("deleted_at", null).order("name"),
-      ]);
+      let locationRequest = supabase.from("locations").select("id, name, school_id").is("deleted_at", null).order("name");
+      let sourceRequest = supabase.from("waste_sources").select("id, name, school_id").is("deleted_at", null).order("name");
+      if (schoolId) {
+        locationRequest = locationRequest.eq("school_id", schoolId);
+        sourceRequest = sourceRequest.or(`school_id.is.null,school_id.eq.${schoolId}`);
+      }
+      const [{ data: locations }, { data: sources }] = await Promise.all([locationRequest, sourceRequest]);
       return { locations: locations ?? [], sources: sources ?? [] };
     },
   });
 
   const { data, error, isLoading, isError, refetch } = useQuery({
-    queryKey: ["dashboard", filters],
-    queryFn: () => fetchDashboard(filters),
+    queryKey: ["dashboard", filters, schoolId],
+    queryFn: () => fetchDashboard({ ...filters, schoolId }),
   });
   const schemaUnavailable = isDatabaseSchemaError(error);
 
