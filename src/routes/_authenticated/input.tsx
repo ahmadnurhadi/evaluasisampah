@@ -38,7 +38,7 @@ function localDateTime() {
 }
 
 function WasteInput() {
-  const { user, roles, canRecord } = useAuthProfile();
+  const { user, roles, canInputWaste: canRecord } = useAuthProfile();
   const queryClient = useQueryClient();
   const syncingRef = useRef(false);
   const [isOnline, setIsOnline] = useState(true);
@@ -47,8 +47,7 @@ function WasteInput() {
   const search = Route.useSearch();
   const isSuperAdmin = roles.includes("super_admin");
   const profileSchoolId = user?.profile?.school_id ?? undefined;
-  const [schoolSelection, setSchoolSelection] = useState("");
-  const schoolId = isSuperAdmin ? schoolSelection || profileSchoolId : profileSchoolId;
+  const [schoolName, setSchoolName] = useState("");
   const [locationId, setLocationId] = useState(search.locationId ?? "");
   const [sourceId, setSourceId] = useState("");
   const [category, setCategory] = useState<WasteCategory>("organic");
@@ -60,7 +59,6 @@ function WasteInput() {
 
   const schoolsQuery = useQuery({
     queryKey: ["waste-input-schools"],
-    enabled: isSuperAdmin,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("schools")
@@ -71,6 +69,11 @@ function WasteInput() {
       return data ?? [];
     },
   });
+
+  const typedSchool = (schoolsQuery.data ?? []).find(
+    (school) => school.name.trim().toLowerCase() === schoolName.trim().toLowerCase(),
+  );
+  const schoolId = schoolName.trim() ? typedSchool?.id : profileSchoolId;
 
   const locationsQuery = useQuery({
     queryKey: ["waste-input-locations", schoolId],
@@ -131,8 +134,10 @@ function WasteInput() {
   });
 
   useEffect(() => {
-    if (!schoolSelection && profileSchoolId) setSchoolSelection(profileSchoolId);
-  }, [profileSchoolId, schoolSelection]);
+    if (schoolName || !profileSchoolId) return;
+    const own = schoolsQuery.data?.find((school) => school.id === profileSchoolId);
+    if (own) setSchoolName(own.name);
+  }, [profileSchoolId, schoolName, schoolsQuery.data]);
 
   useEffect(() => {
     if (!locationId && search.locationId) setLocationId(search.locationId);
@@ -212,6 +217,9 @@ function WasteInput() {
 
   const createRecord = useMutation({
     mutationFn: async (): Promise<{ queued: boolean; batchCode?: string }> => {
+      if (schoolName.trim() && !schoolId) {
+        throw new Error("Nama sekolah tidak ditemukan. Periksa ejaan nama sekolah.");
+      }
       if (!user?.userId || !schoolId || !locationId || !sourceId || !weight || !recordedAt) {
         throw new Error("Lengkapi sekolah, lokasi, sumber, waktu, dan berat sampah.");
       }
@@ -323,19 +331,30 @@ function WasteInput() {
               </div>
             </div>
 
-            {isSuperAdmin ? (
-              <div className="space-y-2">
-                <Label htmlFor="school">Sekolah</Label>
-                <Select value={schoolId ?? ""} onValueChange={setSchoolSelection}>
-                  <SelectTrigger id="school"><SelectValue placeholder="Pilih sekolah" /></SelectTrigger>
-                  <SelectContent>
-                    {(schoolsQuery.data ?? []).map((school) => (
-                      <SelectItem key={school.id} value={school.id}>{school.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            ) : null}
+            <div className="space-y-2">
+              <Label htmlFor="school">Sekolah</Label>
+              <Input
+                id="school"
+                list="school-names"
+                required
+                maxLength={200}
+                value={schoolName}
+                onChange={(event) => {
+                  setSchoolName(event.target.value);
+                  setLocationId("");
+                }}
+                placeholder="Ketik nama sekolah"
+                className="h-12"
+              />
+              <datalist id="school-names">
+                {(schoolsQuery.data ?? []).map((school) => (
+                  <option key={school.id} value={school.name} />
+                ))}
+              </datalist>
+              {schoolName.trim() && !schoolId && !schoolsQuery.isLoading ? (
+                <p className="text-xs text-destructive">Sekolah dengan nama ini belum terdaftar.</p>
+              ) : null}
+            </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
@@ -436,7 +455,7 @@ function WasteInput() {
               type="submit"
               size="lg"
               className="h-12 w-full sm:w-auto"
-              disabled={!canRecord || !schoolId || createRecord.isPending || queryFailed}
+              disabled={!canRecord || createRecord.isPending || queryFailed}
             >
               {createRecord.isPending ? <LoaderCircle className="animate-spin" /> : <Plus />}
               Simpan dan buat batch

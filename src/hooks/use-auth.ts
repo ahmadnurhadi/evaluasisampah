@@ -23,11 +23,15 @@ export function useAuthProfile() {
   });
 
   const roles = query.data?.roles ?? [];
+  const isManager = roles.some((r) => MANAGER_ROLES.includes(r));
+  const canInputWaste = roles.some((r) => RECORDER_ROLES.includes(r));
   return {
     ...query,
     user: query.data ?? null,
     roles,
-    isManager: roles.some((r) => MANAGER_ROLES.includes(r)),
-    canRecord: roles.some((r) => RECORDER_ROLES.includes(r)),
+    isManager,
+    // Non-manager users may only input waste; every other module is read-only for them.
+    canInputWaste,
+    canRecord: canInputWaste && isManager,
   };
 }
