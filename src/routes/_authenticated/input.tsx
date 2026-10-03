@@ -70,10 +70,16 @@ function WasteInput() {
     },
   });
 
-  const typedSchool = (schoolsQuery.data ?? []).find(
-    (school) => school.name.trim().toLowerCase() === schoolName.trim().toLowerCase(),
-  );
-  const schoolId = schoolName.trim() ? typedSchool?.id : profileSchoolId;
+  const typed = schoolName.trim().toLowerCase();
+  const allSchools = schoolsQuery.data ?? [];
+  const partial = typed ? allSchools.filter((school) => school.name.toLowerCase().includes(typed)) : [];
+  const typedSchool =
+    allSchools.find((school) => school.name.trim().toLowerCase() === typed) ??
+    (partial.length === 1 ? partial[0] : undefined);
+  // Unmatched names still record into the account's school so every module stays in sync.
+  const schoolId = typedSchool?.id ?? profileSchoolId;
+  const schoolUnmatched = Boolean(typed) && !typedSchool;
+  const prefilledRef = useRef(false);
 
   const locationsQuery = useQuery({
     queryKey: ["waste-input-locations", schoolId],
@@ -134,9 +140,12 @@ function WasteInput() {
   });
 
   useEffect(() => {
-    if (schoolName || !profileSchoolId) return;
+    if (prefilledRef.current || !profileSchoolId) return;
     const own = schoolsQuery.data?.find((school) => school.id === profileSchoolId);
-    if (own) setSchoolName(own.name);
+    if (own) {
+      prefilledRef.current = true;
+      setSchoolName(own.name);
+    }
   }, [profileSchoolId, schoolName, schoolsQuery.data]);
 
   useEffect(() => {
@@ -217,9 +226,6 @@ function WasteInput() {
 
   const createRecord = useMutation({
     mutationFn: async (): Promise<{ queued: boolean; batchCode?: string }> => {
-      if (schoolName.trim() && !schoolId) {
-        throw new Error("Nama sekolah tidak ditemukan. Periksa ejaan nama sekolah.");
-      }
       if (!user?.userId || !schoolId || !locationId || !sourceId || !weight || !recordedAt) {
         throw new Error("Lengkapi sekolah, lokasi, sumber, waktu, dan berat sampah.");
       }
@@ -234,7 +240,10 @@ function WasteInput() {
         recordedAt: new Date(recordedAt).toISOString(),
         wasteTypeId: wasteTypeId || null,
         photoUrl,
-        notes: notes.trim() || null,
+        notes:
+          [schoolUnmatched ? `Sekolah (input manual): ${schoolName.trim()}` : "", notes.trim()]
+            .filter(Boolean)
+            .join(" · ") || null,
       };
       if (!Number.isFinite(payload.weightKg) || payload.weightKg <= 0) {
         throw new Error("Berat sampah harus lebih besar dari nol.");
@@ -339,10 +348,7 @@ function WasteInput() {
                 required
                 maxLength={200}
                 value={schoolName}
-                onChange={(event) => {
-                  setSchoolName(event.target.value);
-                  setLocationId("");
-                }}
+                onChange={(event) => setSchoolName(event.target.value)}
                 placeholder="Ketik nama sekolah"
                 className="h-12"
               />
@@ -351,8 +357,8 @@ function WasteInput() {
                   <option key={school.id} value={school.name} />
                 ))}
               </datalist>
-              {schoolName.trim() && !schoolId && !schoolsQuery.isLoading ? (
-                <p className="text-xs text-destructive">Sekolah dengan nama ini belum terdaftar.</p>
+              {schoolUnmatched && !schoolsQuery.isLoading ? (
+                <p className="text-xs text-muted-foreground">Nama sekolah dicatat di keterangan; data tetap masuk ke sekolah akun Anda.</p>
               ) : null}
             </div>
 
