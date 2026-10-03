@@ -2,7 +2,7 @@ import { Children, useMemo, useState, type ReactNode } from "react";
 import { Building2, ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-type SchoolFolderRecord = { school_id?: string | null };
+type SchoolFolderRecord = object;
 type School = { id: string; name: string };
 
 export function SchoolFolders<T extends SchoolFolderRecord>({
@@ -28,7 +28,7 @@ export function SchoolFolders<T extends SchoolFolderRecord>({
   const groups = useMemo(() => {
     const grouped = new Map<string, { record: T; index: number }[]>();
     records.forEach((record, index) => {
-      const schoolId = (getSchoolId ? getSchoolId(record) : record.school_id) ?? "unknown";
+      const schoolId = (getSchoolId ? getSchoolId(record) : (record as { school_id?: string | null }).school_id) ?? "unknown";
       grouped.set(schoolId, [...(grouped.get(schoolId) ?? []), { record, index }]);
     });
     return [...grouped.entries()].sort(([leftId], [rightId]) => {
