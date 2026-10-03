@@ -33,7 +33,7 @@ export function SchoolScopeProvider({ children }: { children: ReactNode }) {
         ? selectedSchoolId === null ? user?.profile?.school_id ?? undefined : selectedSchoolId || undefined
         : user?.profile?.school_id ?? undefined,
       schools: schoolsQuery.data ?? [],
-      setSchoolId: setSelectedSchoolId,
+      setSchoolId: (id) => setSelectedSchoolId(id ?? ""),
     }}>
       {children}
     </SchoolScopeContext.Provider>
