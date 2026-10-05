@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { Camera, LoaderCircle, Plus, Scale } from "lucide-react";
+import { Camera, Info, LoaderCircle, Plus, Scale } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
 import { SchoolFolders } from "@/components/school-folders";
@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Link } from "@tanstack/react-router";
 import { useAuthProfile } from "@/hooks/use-auth";
 import { useSchoolScope } from "@/components/school-scope";
 import { supabase } from "@/integrations/supabase/client";
