@@ -398,7 +398,10 @@ function WasteInput() {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="location">Lokasi</Label>
+                <div className="flex items-center gap-1.5">
+                  <Label htmlFor="location">Lokasi</Label>
+                  <MasterDataHint label="lokasi" show={Boolean(schoolId) && !locationsQuery.isLoading && (locationsQuery.data ?? []).length === 0} />
+                </div>
                 <Select value={locationId} onValueChange={setLocationId} disabled={!schoolId}>
                   <SelectTrigger id="location"><SelectValue placeholder="Pilih lokasi" /></SelectTrigger>
                   <SelectContent>
@@ -409,7 +412,10 @@ function WasteInput() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="source">Sumber sampah</Label>
+                <div className="flex items-center gap-1.5">
+                  <Label htmlFor="source">Sumber sampah</Label>
+                  <MasterDataHint label="sumber sampah" show={!sourcesQuery.isLoading && (sourcesQuery.data ?? []).length === 0} />
+                </div>
                 <Select value={sourceId} onValueChange={setSourceId}>
                   <SelectTrigger id="source"><SelectValue placeholder="Pilih sumber" /></SelectTrigger>
                   <SelectContent>
@@ -434,7 +440,10 @@ function WasteInput() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="waste-type">Jenis sampah</Label>
+                <div className="flex items-center gap-1.5">
+                  <Label htmlFor="waste-type">Jenis sampah</Label>
+                  <MasterDataHint label="jenis sampah" show={!typesQuery.isLoading && (typesQuery.data ?? []).length === 0} />
+                </div>
                 <Select value={wasteTypeId || "none"} onValueChange={(value) => setWasteTypeId(value === "none" ? "" : value)}>
                   <SelectTrigger id="waste-type"><SelectValue placeholder="Pilih jenis (opsional)" /></SelectTrigger>
                   <SelectContent>
