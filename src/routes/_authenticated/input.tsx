@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { Camera, LoaderCircle, Plus, Scale } from "lucide-react";
+import { Camera, Info, LoaderCircle, Plus, Scale } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
 import { SchoolFolders } from "@/components/school-folders";
@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Link } from "@tanstack/react-router";
 import { useAuthProfile } from "@/hooks/use-auth";
 import { useSchoolScope } from "@/components/school-scope";
 import { supabase } from "@/integrations/supabase/client";
@@ -37,6 +39,34 @@ export const Route = createFileRoute("/_authenticated/input")({
 
 function localDateTime() {
   return new Date(Date.now() - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
+}
+
+function MasterDataHint({ label, show }: { label: string; show: boolean }) {
+  if (!show) return null;
+  return (
+    <TooltipProvider delayDuration={150}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            aria-label={`Info ${label}`}
+            className="inline-flex size-5 items-center justify-center rounded-full text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+          >
+            <Info className="size-3.5" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-64 text-center">
+          <p>
+            Belum ada pilihan {label}. Tambahkan dulu di menu{" "}
+            <Link to="/master-data" className="font-semibold underline">
+              Data Master
+            </Link>
+            , lalu kembali ke sini.
+          </p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
 }
 
 function WasteInput() {
@@ -368,7 +398,10 @@ function WasteInput() {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="location">Lokasi</Label>
+                <div className="flex items-center gap-1.5">
+                  <Label htmlFor="location">Lokasi</Label>
+                  <MasterDataHint label="lokasi" show={Boolean(schoolId) && !locationsQuery.isLoading && (locationsQuery.data ?? []).length === 0} />
+                </div>
                 <Select value={locationId} onValueChange={setLocationId} disabled={!schoolId}>
                   <SelectTrigger id="location"><SelectValue placeholder="Pilih lokasi" /></SelectTrigger>
                   <SelectContent>
@@ -379,7 +412,10 @@ function WasteInput() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="source">Sumber sampah</Label>
+                <div className="flex items-center gap-1.5">
+                  <Label htmlFor="source">Sumber sampah</Label>
+                  <MasterDataHint label="sumber sampah" show={!sourcesQuery.isLoading && (sourcesQuery.data ?? []).length === 0} />
+                </div>
                 <Select value={sourceId} onValueChange={setSourceId}>
                   <SelectTrigger id="source"><SelectValue placeholder="Pilih sumber" /></SelectTrigger>
                   <SelectContent>
@@ -404,7 +440,10 @@ function WasteInput() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="waste-type">Jenis sampah</Label>
+                <div className="flex items-center gap-1.5">
+                  <Label htmlFor="waste-type">Jenis sampah</Label>
+                  <MasterDataHint label="jenis sampah" show={!typesQuery.isLoading && (typesQuery.data ?? []).length === 0} />
+                </div>
                 <Select value={wasteTypeId || "none"} onValueChange={(value) => setWasteTypeId(value === "none" ? "" : value)}>
                   <SelectTrigger id="waste-type"><SelectValue placeholder="Pilih jenis (opsional)" /></SelectTrigger>
                   <SelectContent>
