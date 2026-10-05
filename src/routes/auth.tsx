@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Leaf } from "lucide-react";
 import { toast } from "sonner";
@@ -8,6 +8,15 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/auth")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    redirect:
+      typeof search.redirect === "string" &&
+      search.redirect.startsWith("/") &&
+      !search.redirect.startsWith("//") &&
+      !search.redirect.includes("\\")
+        ? search.redirect
+        : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Masuk — Eco-School Waste Management" },
@@ -20,16 +29,16 @@ export const Route = createFileRoute("/auth")({
 });
 
 function AuthPage() {
-  const navigate = useNavigate();
+  const search = Route.useSearch();
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: "/dashboard", replace: true });
+      if (data.session) window.location.replace(search.redirect ?? "/dashboard");
     });
-  }, [navigate]);
+  }, [search.redirect]);
 
   async function signIn(e: React.FormEvent) {
     e.preventDefault();
@@ -37,7 +46,7 @@ function AuthPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) return toast.error("Email atau kata sandi salah.");
-    navigate({ to: "/dashboard", replace: true });
+    window.location.replace(search.redirect ?? "/dashboard");
   }
 
   return (

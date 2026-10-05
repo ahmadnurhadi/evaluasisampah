@@ -5,6 +5,7 @@ export type WasteGenerationPayload = {
   userId: string;
   schoolId: string;
   locationId: string;
+  qrToken: string;
   sourceId: string;
   category: WasteCategory;
   weightKg: number;

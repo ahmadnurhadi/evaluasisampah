@@ -27,6 +27,7 @@ import { CATEGORY_LABEL, CATEGORIES, STAGE_LABEL, fmtDateTime, fmtKg, type Waste
 export const Route = createFileRoute("/_authenticated/input")({
   validateSearch: (search: Record<string, unknown>) => ({
     locationId: typeof search.locationId === "string" ? search.locationId : undefined,
+    qrToken: typeof search.qrToken === "string" ? search.qrToken : undefined,
   }),
   head: () => ({
     meta: [
@@ -204,10 +205,15 @@ function WasteInput() {
         const queued = await listQueuedWasteGeneration(userId!);
         let synced = 0;
         for (const entry of queued) {
+          if (!entry.qrToken) {
+            setSyncMessage("Catatan offline lama tidak menyimpan bukti QR. Catat ulang dengan memindai QR lokasi terbaru.");
+            break;
+          }
           const { error } = await supabase.rpc("record_waste_generation_v2", {
             p_request_id: entry.requestId,
             p_school_id: entry.schoolId,
             p_location_id: entry.locationId,
+            p_qr_token: entry.qrToken,
             p_source_id: entry.sourceId,
             p_category: entry.category,
             p_weight_kg: entry.weightKg,
@@ -268,6 +274,7 @@ function WasteInput() {
         userId: user.userId,
         schoolId,
         locationId,
+        qrToken: search.qrToken ?? "",
         sourceId,
         category,
         weightKg: Number(weight),
@@ -279,8 +286,17 @@ function WasteInput() {
             .filter(Boolean)
             .join(" · ") || null,
       };
+      if (search.locationId && !search.qrToken) {
+        throw new Error("QR lokasi lama tidak lagi berlaku. Pindai QR lokasi terbaru.");
+      }
+      if (!payload.qrToken) {
+        throw new Error("Token QR lokasi tidak valid. Pindai QR lokasi terbaru.");
+      }
       if (!Number.isFinite(payload.weightKg) || payload.weightKg <= 0) {
         throw new Error("Berat sampah harus lebih besar dari nol.");
+      }
+      if (payload.weightKg > 9999.999) {
+        throw new Error("Berat sampah tidak boleh melebihi 9.999,999 kg.");
       }
       if (!navigator.onLine) {
         await queueWasteGeneration(payload);
@@ -290,6 +306,7 @@ function WasteInput() {
         p_request_id: payload.requestId,
         p_school_id: payload.schoolId,
         p_location_id: payload.locationId,
+        p_qr_token: payload.qrToken,
         p_source_id: payload.sourceId,
         p_category: payload.category,
         p_weight_kg: payload.weightKg,
@@ -348,6 +365,11 @@ function WasteInput() {
           Peran akun ini hanya dapat melihat data, bukan mencatat sampah.
         </div>
       ) : null}
+      {canRecord && !search.qrToken ? (
+        <div role="alert" className="eco-surface mb-4 p-4 text-sm">
+          Pindai QR lokasi terbaru untuk memulai pencatatan.
+        </div>
+      ) : null}
 
       {!profileSchoolId && !isSuperAdmin ? (
         <div role="alert" className="eco-surface mb-4 p-4 text-sm">
@@ -402,7 +424,7 @@ function WasteInput() {
                   <Label htmlFor="location">Lokasi</Label>
                   <MasterDataHint label="lokasi" empty={!locationsQuery.isLoading && (locationsQuery.data ?? []).length === 0} />
                 </div>
-                <Select value={locationId} onValueChange={setLocationId} disabled={!schoolId}>
+                <Select value={locationId} onValueChange={setLocationId} disabled={!schoolId || !search.qrToken}>
                   <SelectTrigger id="location"><SelectValue placeholder="Pilih lokasi" /></SelectTrigger>
                   <SelectContent>
                     {(locationsQuery.data ?? []).map((location) => (
@@ -464,6 +486,7 @@ function WasteInput() {
                   type="number"
                   inputMode="decimal"
                   min="0.001"
+                  max="9999.999"
                   step="0.001"
                   required
                   value={weight}
