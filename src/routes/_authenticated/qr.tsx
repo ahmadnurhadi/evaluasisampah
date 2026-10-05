@@ -30,9 +30,9 @@ function QrPage() {
       if (schoolId) request = request.eq("school_id", schoolId);
       const { data, error } = await request;
       if (error) throw error;
-      const { data: qrTokens, error: tokenError } = await supabase.rpc("get_location_qr_tokens");
+      const { data: qrTokens, error: tokenError } = await supabase.rpc("get_location_qr_tokens" as never);
       if (tokenError) throw tokenError;
-      const tokensByLocation = new Map(qrTokens.map((token) => [token.location_id, token.qr_token]));
+      const tokensByLocation = new Map(((qrTokens ?? []) as { location_id: string; qr_token: string }[]).map((token) => [token.location_id, token.qr_token]));
       return (data ?? []).flatMap((location) => {
         const qr_token = tokensByLocation.get(location.id);
         return qr_token ? [{ ...location, qr_token }] : [];

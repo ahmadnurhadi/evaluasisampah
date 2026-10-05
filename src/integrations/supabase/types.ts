@@ -1396,10 +1396,6 @@ export type Database = {
       can_manage_user: { Args: { _user_id: string }; Returns: boolean }
       can_record: { Args: { _user_id: string }; Returns: boolean }
       current_school_id: { Args: never; Returns: string }
-      get_location_qr_tokens: {
-        Args: never
-        Returns: { location_id: string; qr_token: string }[]
-      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1488,7 +1484,6 @@ export type Database = {
           p_location_id: string
           p_notes?: string
           p_photo_url?: string
-          p_qr_token: string
           p_recorded_at: string
           p_request_id: string
           p_school_id: string
