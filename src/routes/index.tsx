@@ -44,7 +44,7 @@ function Landing() {
           </div>
         </div>
         <Button asChild size="sm">
-          <Link to="/auth">Masuk</Link>
+          <Link to="/auth" search={{}}>Masuk</Link>
         </Button>
       </header>
 
@@ -61,7 +61,7 @@ function Landing() {
         </p>
         <div className="mt-7 flex flex-wrap justify-center gap-3">
           <Button asChild size="lg">
-            <Link to="/auth">Mulai sekarang</Link>
+            <Link to="/auth" search={{}}>Mulai sekarang</Link>
           </Button>
           <Button asChild size="lg" variant="outline">
             <Link to="/dashboard">Lihat dashboard</Link>
