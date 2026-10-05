@@ -41,8 +41,7 @@ function localDateTime() {
   return new Date(Date.now() - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
 }
 
-function MasterDataHint({ label, show }: { label: string; show: boolean }) {
-  if (!show) return null;
+function MasterDataHint({ label, empty }: { label: string; empty: boolean }) {
   return (
     <TooltipProvider delayDuration={150}>
       <Tooltip>
@@ -57,7 +56,8 @@ function MasterDataHint({ label, show }: { label: string; show: boolean }) {
         </TooltipTrigger>
         <TooltipContent side="top" className="max-w-64 text-center">
           <p>
-            Belum ada pilihan {label}. Tambahkan dulu di menu{" "}
+            {empty ? `Belum ada pilihan ${label}. ` : `Perlu ${label} baru? `}
+            Tambahkan dulu di menu{" "}
             <Link to="/master-data" className="font-semibold underline">
               Data Master
             </Link>
@@ -400,7 +400,7 @@ function WasteInput() {
               <div className="space-y-2">
                 <div className="flex items-center gap-1.5">
                   <Label htmlFor="location">Lokasi</Label>
-                  <MasterDataHint label="lokasi" show={Boolean(schoolId) && !locationsQuery.isLoading && (locationsQuery.data ?? []).length === 0} />
+                  <MasterDataHint label="lokasi" empty={!locationsQuery.isLoading && (locationsQuery.data ?? []).length === 0} />
                 </div>
                 <Select value={locationId} onValueChange={setLocationId} disabled={!schoolId}>
                   <SelectTrigger id="location"><SelectValue placeholder="Pilih lokasi" /></SelectTrigger>
@@ -414,7 +414,7 @@ function WasteInput() {
               <div className="space-y-2">
                 <div className="flex items-center gap-1.5">
                   <Label htmlFor="source">Sumber sampah</Label>
-                  <MasterDataHint label="sumber sampah" show={!sourcesQuery.isLoading && (sourcesQuery.data ?? []).length === 0} />
+                  <MasterDataHint label="sumber sampah" empty={!sourcesQuery.isLoading && (sourcesQuery.data ?? []).length === 0} />
                 </div>
                 <Select value={sourceId} onValueChange={setSourceId}>
                   <SelectTrigger id="source"><SelectValue placeholder="Pilih sumber" /></SelectTrigger>
@@ -442,7 +442,7 @@ function WasteInput() {
               <div className="space-y-2">
                 <div className="flex items-center gap-1.5">
                   <Label htmlFor="waste-type">Jenis sampah</Label>
-                  <MasterDataHint label="jenis sampah" show={!typesQuery.isLoading && (typesQuery.data ?? []).length === 0} />
+                  <MasterDataHint label="jenis sampah" empty={!typesQuery.isLoading && (typesQuery.data ?? []).length === 0} />
                 </div>
                 <Select value={wasteTypeId || "none"} onValueChange={(value) => setWasteTypeId(value === "none" ? "" : value)}>
                   <SelectTrigger id="waste-type"><SelectValue placeholder="Pilih jenis (opsional)" /></SelectTrigger>
