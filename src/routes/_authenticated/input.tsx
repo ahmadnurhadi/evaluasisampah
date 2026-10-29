@@ -425,7 +425,7 @@ function WasteInput() {
                   <MasterDataHint label="lokasi" empty={!locationsQuery.isLoading && (locationsQuery.data ?? []).length === 0} />
                 </div>
                 <Select value={locationId} onValueChange={setLocationId} disabled={!schoolId || !search.qrToken}>
-                  <SelectTrigger id="location"><SelectValue placeholder="Pilih lokasi" /></SelectTrigger>
+                  <SelectTrigger id="location" className="h-12"><SelectValue placeholder="Pilih lokasi" /></SelectTrigger>
                   <SelectContent>
                     {(locationsQuery.data ?? []).map((location) => (
                       <SelectItem key={location.id} value={location.id}>{location.name}</SelectItem>
@@ -439,7 +439,7 @@ function WasteInput() {
                   <MasterDataHint label="sumber sampah" empty={!sourcesQuery.isLoading && (sourcesQuery.data ?? []).length === 0} />
                 </div>
                 <Select value={sourceId} onValueChange={setSourceId}>
-                  <SelectTrigger id="source"><SelectValue placeholder="Pilih sumber" /></SelectTrigger>
+                  <SelectTrigger id="source" className="h-12"><SelectValue placeholder="Pilih sumber" /></SelectTrigger>
                   <SelectContent>
                     {(sourcesQuery.data ?? []).map((source) => (
                       <SelectItem key={source.id} value={source.id}>{source.name}</SelectItem>
@@ -453,7 +453,7 @@ function WasteInput() {
               <div className="space-y-2">
                 <Label htmlFor="category">Kategori</Label>
                 <Select value={category} onValueChange={(value) => setCategory(value as WasteCategory)}>
-                  <SelectTrigger id="category"><SelectValue /></SelectTrigger>
+                  <SelectTrigger id="category" className="h-12"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {CATEGORIES.map((value) => (
                       <SelectItem key={value} value={value}>{CATEGORY_LABEL[value]}</SelectItem>
@@ -467,7 +467,7 @@ function WasteInput() {
                   <MasterDataHint label="jenis sampah" empty={!typesQuery.isLoading && (typesQuery.data ?? []).length === 0} />
                 </div>
                 <Select value={wasteTypeId || "none"} onValueChange={(value) => setWasteTypeId(value === "none" ? "" : value)}>
-                  <SelectTrigger id="waste-type"><SelectValue placeholder="Pilih jenis (opsional)" /></SelectTrigger>
+                  <SelectTrigger id="waste-type" className="h-12"><SelectValue placeholder="Pilih jenis (opsional)" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">Jenis belum ditentukan</SelectItem>
                     {(typesQuery.data ?? []).map((type) => (
