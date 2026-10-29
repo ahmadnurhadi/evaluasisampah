@@ -235,8 +235,9 @@ export function AppShell({
           ) : null}
           {actions}
         </header>
-        <main className="mx-auto w-full max-w-7xl px-4 py-5 pb-24">{children}</main>
+        <main className="mx-auto w-full max-w-7xl px-4 py-5 pb-28">{children}</main>
       </div>
+      <MobileBottomNav canRecord={canRecord} onOpenMenu={() => setOpen(true)} />
     </div>
   );
 }
