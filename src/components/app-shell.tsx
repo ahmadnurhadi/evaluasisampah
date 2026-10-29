@@ -255,7 +255,7 @@ export function AppShell({
               <SheetTitle className="sr-only">Menu navigasi</SheetTitle>
               <Brand />
               <div className="max-h-[calc(100vh-9rem)] overflow-y-auto">
-                <NavLinks onNavigate={() => setOpen(false)} canRecord={canRecord} isManager={isManager} roles={roles} />
+                <MenuGrid onNavigate={() => setOpen(false)} canRecord={canRecord} isManager={isManager} roles={roles} />
               </div>
               <div className="border-t border-sidebar-border p-3">
                 <Button variant="ghost" size="sm" className="w-full justify-start" onClick={handleSignOut}>
