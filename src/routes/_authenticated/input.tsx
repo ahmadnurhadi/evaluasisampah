@@ -492,7 +492,7 @@ function WasteInput() {
                   value={weight}
                   onChange={(event) => setWeight(event.target.value)}
                   placeholder="0,000"
-                  className="h-12 text-lg"
+                  className="h-12"
                 />
               </div>
               <div className="space-y-2">
