@@ -121,7 +121,7 @@ function MenuGrid({ onNavigate, canRecord, isManager, roles }: { onNavigate: () 
             </span>
             <span
               className={cn(
-                "line-clamp-2 text-center text-[11px] font-medium leading-tight",
+                "min-w-0 text-center text-xs font-medium leading-snug",
                 active ? "text-primary" : "text-foreground/80",
               )}
             >
@@ -241,7 +241,7 @@ export function AppShell({
       </aside>
 
       <div className="lg:pl-64">
-        <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-border bg-background/85 px-4 py-3 backdrop-blur">
+        <header className="sticky top-0 z-30 grid grid-cols-[auto_auto_minmax(0,1fr)] items-center gap-2 border-b border-border bg-background/85 px-4 py-3 backdrop-blur sm:flex sm:gap-3">
           <Button variant="ghost" size="icon" className="shrink-0" aria-label="Kembali" title="Kembali" onClick={handleBack}>
             <ArrowLeft className="size-5" />
           </Button>
@@ -265,14 +265,14 @@ export function AppShell({
             </SheetContent>
           </Sheet>
           <div className="min-w-0 flex-1">
-            <h1 className="truncate font-display text-lg font-bold">{title}</h1>
+            <h1 className="font-display text-lg font-semibold leading-snug">{title}</h1>
             {description ? (
-              <p className="truncate text-xs text-muted-foreground">{description}</p>
+              <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{description}</p>
             ) : null}
           </div>
           {schoolScope.isSuperAdmin ? (
             <Select value={schoolScope.schoolId ?? "all"} onValueChange={(value) => schoolScope.setSchoolId(value === "all" ? "" : value)}>
-              <SelectTrigger aria-label="Lingkup sekolah" className="w-28 shrink-0 sm:w-48">
+              <SelectTrigger aria-label="Lingkup sekolah" className="col-span-3 w-full min-w-0 shrink-0 sm:w-48">
                 <SelectValue placeholder="Pilih sekolah" />
               </SelectTrigger>
               <SelectContent>

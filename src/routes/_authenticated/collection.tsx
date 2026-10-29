@@ -187,7 +187,7 @@ function CollectionPage() {
                   required
                   value={actualWeight}
                   onChange={(event) => setActualWeight(event.target.value)}
-                  className="h-12 text-lg"
+                  className="h-12"
                 />
               </div>
             </div>
