@@ -84,6 +84,56 @@ function NavLinks({ onNavigate, canRecord, isManager, roles }: { onNavigate?: ()
   );
 }
 
+const MENU_TILE_COLORS = [
+  "menu-tile-color-1",
+  "menu-tile-color-2",
+  "menu-tile-color-3",
+  "menu-tile-color-4",
+  "menu-tile-color-5",
+];
+
+function MenuGrid({ onNavigate, canRecord, isManager, roles }: { onNavigate: () => void; canRecord: boolean; isManager: boolean; roles: ReturnType<typeof useAuthProfile>["roles"] }) {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const items = NAV_ITEMS
+    .filter((item) => item.permission !== "recorder" || canRecord)
+    .filter((item) => item.permission !== "manager" || isManager)
+    .filter((item) => item.to !== "/settings" || roles.some((role) => role === "super_admin" || role === "school_admin"));
+  return (
+    <nav aria-label="Menu utama" className="grid grid-cols-4 gap-x-2 gap-y-5 p-4">
+      {items.map((item, index) => {
+        const active = pathname === item.to || pathname.startsWith(`${item.to}/`);
+        const Icon = item.icon;
+        return (
+          <Link
+            key={item.to}
+            to={item.to}
+            onClick={onNavigate}
+            className="flex flex-col items-center gap-1.5"
+          >
+            <span
+              className={cn(
+                "flex size-14 items-center justify-center rounded-2xl shadow-sm transition-transform active:scale-90",
+                MENU_TILE_COLORS[index % MENU_TILE_COLORS.length],
+                active && "ring-2 ring-ring ring-offset-2 ring-offset-sidebar",
+              )}
+            >
+              <Icon className="size-6" />
+            </span>
+            <span
+              className={cn(
+                "line-clamp-2 text-center text-[11px] font-medium leading-tight",
+                active ? "text-primary" : "text-foreground/80",
+              )}
+            >
+              {item.label}
+            </span>
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+
 function Brand() {
   return (
     <div className="flex items-center gap-3 border-b border-sidebar-border px-4 py-4">
@@ -201,11 +251,11 @@ export function AppShell({
                 <Menu className="size-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-72 bg-sidebar p-0">
+            <SheetContent side="left" className="w-80 bg-sidebar p-0">
               <SheetTitle className="sr-only">Menu navigasi</SheetTitle>
               <Brand />
               <div className="max-h-[calc(100vh-9rem)] overflow-y-auto">
-                <NavLinks onNavigate={() => setOpen(false)} canRecord={canRecord} isManager={isManager} roles={roles} />
+                <MenuGrid onNavigate={() => setOpen(false)} canRecord={canRecord} isManager={isManager} roles={roles} />
               </div>
               <div className="border-t border-sidebar-border p-3">
                 <Button variant="ghost" size="sm" className="w-full justify-start" onClick={handleSignOut}>
