@@ -33,6 +33,10 @@ export const Route = createFileRoute("/_authenticated/input")({
     meta: [
       { title: "Input Sampah — Eco-School Waste Management" },
       { name: "description", content: "Catat jumlah sampah dan buat batch yang mudah dilacak." },
+      {"property": "og:title", "content": "Input Sampah — Eco-School Waste Management"},
+      {"property": "og:description", "content": "Catat jumlah sampah dan buat batch yang mudah dilacak."},
+      {"property": "og:type", "content": "website"},
+      {"name": "twitter:card", "content": "summary_large_image"},
     ],
   }),
   component: WasteInput,

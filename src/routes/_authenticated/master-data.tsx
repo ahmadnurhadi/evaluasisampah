@@ -16,7 +16,13 @@ import { invalidateMasterDataQueries } from "@/lib/query-invalidation";
 import { CATEGORY_LABEL, CATEGORIES, type WasteCategory } from "@/lib/waste";
 
 export const Route = createFileRoute("/_authenticated/master-data")({
-  head: () => ({ meta: [{ title: "Master Data — Eco-School Waste Management" }] }),
+  head: () => ({ meta: [{ title: "Master Data — Eco-School Waste Management" },
+      {"name": "description", "content": "Kelola sekolah, lokasi, sumber, jenis sampah, dan mitra pengelolaan."},
+      {"property": "og:title", "content": "Master Data — Eco-School Waste Management"},
+      {"property": "og:description", "content": "Kelola sekolah, lokasi, sumber, jenis sampah, dan mitra pengelolaan."},
+      {"property": "og:type", "content": "website"},
+      {"name": "twitter:card", "content": "summary_large_image"},
+    ] }),
   component: MasterDataPage,
 });
 

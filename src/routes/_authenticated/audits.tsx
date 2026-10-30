@@ -17,7 +17,13 @@ import { invalidateAuditQueries } from "@/lib/query-invalidation";
 import { fmtDate, fmtPct } from "@/lib/waste";
 
 export const Route = createFileRoute("/_authenticated/audits")({
-  head: () => ({ meta: [{ title: "Audit Lingkungan — Eco-School Waste Management" }] }),
+  head: () => ({ meta: [{ title: "Audit Lingkungan — Eco-School Waste Management" },
+      {"name": "description", "content": "Nilai kebersihan dan pengelolaan sampah sekolah melalui audit lingkungan."},
+      {"property": "og:title", "content": "Audit Lingkungan — Eco-School Waste Management"},
+      {"property": "og:description", "content": "Nilai kebersihan dan pengelolaan sampah sekolah melalui audit lingkungan."},
+      {"property": "og:type", "content": "website"},
+      {"name": "twitter:card", "content": "summary_large_image"},
+    ] }),
   component: AuditsPage,
 });
 

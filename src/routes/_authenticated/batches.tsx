@@ -24,6 +24,10 @@ export const Route = createFileRoute("/_authenticated/batches")({
     meta: [
       { title: "Batch Sampah — Eco-School Waste Management" },
       { name: "description", content: "Telusuri sumber, status, dan lini masa setiap batch sampah." },
+      {"property": "og:title", "content": "Batch Sampah — Eco-School Waste Management"},
+      {"property": "og:description", "content": "Telusuri sumber, status, dan lini masa setiap batch sampah."},
+      {"property": "og:type", "content": "website"},
+      {"name": "twitter:card", "content": "summary_large_image"},
     ],
   }),
   component: BatchesPage,

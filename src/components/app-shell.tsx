@@ -99,7 +99,7 @@ function MenuGrid({ onNavigate, canRecord, isManager, roles }: { onNavigate: () 
     .filter((item) => item.permission !== "manager" || isManager)
     .filter((item) => item.to !== "/settings" || roles.some((role) => role === "super_admin" || role === "school_admin"));
   return (
-    <nav aria-label="Menu utama" className="grid grid-cols-4 gap-x-2 gap-y-5 p-4">
+    <nav aria-label="Menu utama" className="grid grid-cols-3 gap-x-3 gap-y-5 p-4">
       {items.map((item, index) => {
         const active = pathname === item.to || pathname.startsWith(`${item.to}/`);
         const Icon = item.icon;

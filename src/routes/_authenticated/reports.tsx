@@ -14,7 +14,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { CATEGORY_LABEL, fmtDateTime, fmtKg, fmtPct, fmtRp, type WasteCategory } from "@/lib/waste";
 
 export const Route = createFileRoute("/_authenticated/reports")({
-  head: () => ({ meta: [{ title: "Laporan — Eco-School Waste Management" }] }),
+  head: () => ({ meta: [{ title: "Laporan — Eco-School Waste Management" },
+      {"name": "description", "content": "Tinjau dan ekspor laporan pengelolaan sampah sekolah."},
+      {"property": "og:title", "content": "Laporan — Eco-School Waste Management"},
+      {"property": "og:description", "content": "Tinjau dan ekspor laporan pengelolaan sampah sekolah."},
+      {"property": "og:type", "content": "website"},
+      {"name": "twitter:card", "content": "summary_large_image"},
+    ] }),
   component: ReportsPage,
 });
 

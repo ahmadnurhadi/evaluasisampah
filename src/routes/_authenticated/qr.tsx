@@ -12,7 +12,13 @@ import { useSchoolScope } from "@/components/school-scope";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/qr")({
-  head: () => ({ meta: [{ title: "QR Lokasi — Eco-School Waste Management" }] }),
+  head: () => ({ meta: [{ title: "QR Lokasi — Eco-School Waste Management" },
+      {"name": "description", "content": "Kelola kode QR lokasi untuk pencatatan sampah sekolah."},
+      {"property": "og:title", "content": "QR Lokasi — Eco-School Waste Management"},
+      {"property": "og:description", "content": "Kelola kode QR lokasi untuk pencatatan sampah sekolah."},
+      {"property": "og:type", "content": "website"},
+      {"name": "twitter:card", "content": "summary_large_image"},
+    ] }),
   component: QrPage,
 });
 

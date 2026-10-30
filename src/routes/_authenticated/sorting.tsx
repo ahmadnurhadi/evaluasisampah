@@ -19,6 +19,10 @@ export const Route = createFileRoute("/_authenticated/sorting")({
     meta: [
       { title: "Pemilahan — Eco-School Waste Management" },
       { name: "description", content: "Pilah batch sampah dengan validasi massa dan persentase otomatis." },
+      {"property": "og:title", "content": "Pemilahan — Eco-School Waste Management"},
+      {"property": "og:description", "content": "Pilah batch sampah dengan validasi massa dan persentase otomatis."},
+      {"property": "og:type", "content": "website"},
+      {"name": "twitter:card", "content": "summary_large_image"},
     ],
   }),
   component: SortingPage,
