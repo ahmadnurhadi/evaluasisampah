@@ -83,7 +83,7 @@ function NavLinks({ onNavigate, canRecord, isManager, roles }: { onNavigate?: ()
   );
 }
 
-const MENU_TILE_COLORS = [
+export const MENU_TILE_COLORS = [
   "menu-tile-color-1",
   "menu-tile-color-2",
   "menu-tile-color-3",
@@ -91,47 +91,6 @@ const MENU_TILE_COLORS = [
   "menu-tile-color-5",
 ];
 
-function MenuGrid({ onNavigate, canRecord, isManager, roles }: { onNavigate: () => void; canRecord: boolean; isManager: boolean; roles: ReturnType<typeof useAuthProfile>["roles"] }) {
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const items = NAV_ITEMS
-    .filter((item) => item.permission !== "recorder" || canRecord)
-    .filter((item) => item.permission !== "manager" || isManager)
-    .filter((item) => item.to !== "/settings" || roles.some((role) => role === "super_admin" || role === "school_admin"));
-  return (
-    <nav aria-label="Menu utama" className="grid grid-cols-3 gap-x-3 gap-y-5 p-4">
-      {items.map((item, index) => {
-        const active = pathname === item.to || pathname.startsWith(`${item.to}/`);
-        const Icon = item.icon;
-        return (
-          <Link
-            key={item.to}
-            to={item.to}
-            onClick={onNavigate}
-            className="flex flex-col items-center gap-1.5"
-          >
-            <span
-              className={cn(
-                "flex size-14 items-center justify-center rounded-2xl shadow-sm transition-transform active:scale-90",
-                MENU_TILE_COLORS[index % MENU_TILE_COLORS.length],
-                active && "ring-2 ring-ring ring-offset-2 ring-offset-sidebar",
-              )}
-            >
-              <Icon className="size-6" />
-            </span>
-            <span
-              className={cn(
-                "min-w-0 text-center text-xs font-medium leading-snug",
-                active ? "text-primary" : "text-foreground/80",
-              )}
-            >
-              {item.label}
-            </span>
-          </Link>
-        );
-      })}
-    </nav>
-  );
-}
 
 function Brand() {
   return (

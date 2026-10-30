@@ -20,6 +20,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedFindingsRouteImport } from './routes/_authenticated/findings'
 import { Route as AuthenticatedInputRouteImport } from './routes/_authenticated/input'
 import { Route as AuthenticatedMasterDataRouteImport } from './routes/_authenticated/master-data'
+import { Route as AuthenticatedMenuRouteImport } from './routes/_authenticated/menu'
 import { Route as AuthenticatedProcessingRouteImport } from './routes/_authenticated/processing'
 import { Route as AuthenticatedQrRouteImport } from './routes/_authenticated/qr'
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
@@ -83,6 +84,11 @@ const AuthenticatedMasterDataRoute = AuthenticatedMasterDataRouteImport.update({
   path: '/master-data',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedMenuRoute = AuthenticatedMenuRouteImport.update({
+  id: '/menu',
+  path: '/menu',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedProcessingRoute = AuthenticatedProcessingRouteImport.update({
   id: '/processing',
   path: '/processing',
@@ -136,6 +142,7 @@ export interface FileRoutesByFullPath {
   '/findings': typeof AuthenticatedFindingsRoute
   '/input': typeof AuthenticatedInputRoute
   '/master-data': typeof AuthenticatedMasterDataRoute
+  '/menu': typeof AuthenticatedMenuRoute
   '/processing': typeof AuthenticatedProcessingRoute
   '/qr': typeof AuthenticatedQrRoute
   '/reports': typeof AuthenticatedReportsRoute
@@ -156,6 +163,7 @@ export interface FileRoutesByTo {
   '/findings': typeof AuthenticatedFindingsRoute
   '/input': typeof AuthenticatedInputRoute
   '/master-data': typeof AuthenticatedMasterDataRoute
+  '/menu': typeof AuthenticatedMenuRoute
   '/processing': typeof AuthenticatedProcessingRoute
   '/qr': typeof AuthenticatedQrRoute
   '/reports': typeof AuthenticatedReportsRoute
@@ -178,6 +186,7 @@ export interface FileRoutesById {
   '/_authenticated/findings': typeof AuthenticatedFindingsRoute
   '/_authenticated/input': typeof AuthenticatedInputRoute
   '/_authenticated/master-data': typeof AuthenticatedMasterDataRoute
+  '/_authenticated/menu': typeof AuthenticatedMenuRoute
   '/_authenticated/processing': typeof AuthenticatedProcessingRoute
   '/_authenticated/qr': typeof AuthenticatedQrRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
@@ -200,6 +209,7 @@ export interface FileRouteTypes {
     | '/findings'
     | '/input'
     | '/master-data'
+    | '/menu'
     | '/processing'
     | '/qr'
     | '/reports'
@@ -220,6 +230,7 @@ export interface FileRouteTypes {
     | '/findings'
     | '/input'
     | '/master-data'
+    | '/menu'
     | '/processing'
     | '/qr'
     | '/reports'
@@ -241,6 +252,7 @@ export interface FileRouteTypes {
     | '/_authenticated/findings'
     | '/_authenticated/input'
     | '/_authenticated/master-data'
+    | '/_authenticated/menu'
     | '/_authenticated/processing'
     | '/_authenticated/qr'
     | '/_authenticated/reports'
@@ -336,6 +348,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMasterDataRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/menu': {
+      id: '/_authenticated/menu'
+      path: '/menu'
+      fullPath: '/menu'
+      preLoaderRoute: typeof AuthenticatedMenuRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/processing': {
       id: '/_authenticated/processing'
       path: '/processing'
@@ -404,6 +423,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedFindingsRoute: typeof AuthenticatedFindingsRoute
   AuthenticatedInputRoute: typeof AuthenticatedInputRoute
   AuthenticatedMasterDataRoute: typeof AuthenticatedMasterDataRoute
+  AuthenticatedMenuRoute: typeof AuthenticatedMenuRoute
   AuthenticatedProcessingRoute: typeof AuthenticatedProcessingRoute
   AuthenticatedQrRoute: typeof AuthenticatedQrRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
@@ -423,6 +443,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedFindingsRoute: AuthenticatedFindingsRoute,
   AuthenticatedInputRoute: AuthenticatedInputRoute,
   AuthenticatedMasterDataRoute: AuthenticatedMasterDataRoute,
+  AuthenticatedMenuRoute: AuthenticatedMenuRoute,
   AuthenticatedProcessingRoute: AuthenticatedProcessingRoute,
   AuthenticatedQrRoute: AuthenticatedQrRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRoute,
