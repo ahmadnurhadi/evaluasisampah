@@ -19,7 +19,13 @@ import { invalidateAuditQueries } from "@/lib/query-invalidation";
 import { FINDING_STATUS_LABEL, SEVERITY_LABEL, fmtDate, type FindingStatus, type Severity } from "@/lib/waste";
 
 export const Route = createFileRoute("/_authenticated/findings")({
-  head: () => ({ meta: [{ title: "Temuan dan Tindakan — Eco-School Waste Management" }] }),
+  head: () => ({ meta: [{ title: "Temuan dan Tindakan — Eco-School Waste Management" },
+      {"name": "description", "content": "Pantau temuan audit dan tindak lanjut perbaikan lingkungan sekolah."},
+      {"property": "og:title", "content": "Temuan dan Tindakan — Eco-School Waste Management"},
+      {"property": "og:description", "content": "Pantau temuan audit dan tindak lanjut perbaikan lingkungan sekolah."},
+      {"property": "og:type", "content": "website"},
+      {"name": "twitter:card", "content": "summary_large_image"},
+    ] }),
   component: FindingsPage,
 });
 

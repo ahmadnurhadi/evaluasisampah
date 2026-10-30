@@ -21,6 +21,10 @@ export const Route = createFileRoute("/_authenticated/collection")({
     meta: [
       { title: "Pengumpulan — Eco-School Waste Management" },
       { name: "description", content: "Catat pengumpulan sampah dari batch sekolah." },
+      {"property": "og:title", "content": "Pengumpulan — Eco-School Waste Management"},
+      {"property": "og:description", "content": "Catat pengumpulan sampah dari batch sekolah."},
+      {"property": "og:type", "content": "website"},
+      {"name": "twitter:card", "content": "summary_large_image"},
     ],
   }),
   component: CollectionPage,

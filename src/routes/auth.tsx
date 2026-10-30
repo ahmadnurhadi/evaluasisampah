@@ -23,6 +23,8 @@ export const Route = createFileRoute("/auth")({
       { name: "description", content: "Masuk untuk mengelola data sampah sekolah." },
       { property: "og:title", content: "Masuk — Eco-School Waste Management" },
       { property: "og:description", content: "Akses sistem monitoring sampah sekolah." },
+      {"property": "og:type", "content": "website"},
+      {"name": "twitter:card", "content": "summary_large_image"},
     ],
   }),
   component: AuthPage,

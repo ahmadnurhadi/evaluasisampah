@@ -34,6 +34,8 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
       { name: "description", content: "Ringkasan sampah yang dihasilkan, pemanfaatan, dan KPI sekolah." },
       { property: "og:title", content: "Dashboard Sampah Sekolah" },
       { property: "og:description", content: "KPI dan tren pengelolaan sampah sekolah." },
+      {"property": "og:type", "content": "website"},
+      {"name": "twitter:card", "content": "summary_large_image"},
     ],
   }),
   component: Dashboard,

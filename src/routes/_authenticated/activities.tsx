@@ -18,7 +18,13 @@ import { invalidateActivityQueries } from "@/lib/query-invalidation";
 import { fmtDate, fmtKg } from "@/lib/waste";
 
 export const Route = createFileRoute("/_authenticated/activities")({
-  head: () => ({ meta: [{ title: "Kegiatan Lingkungan — Eco-School Waste Management" }] }),
+  head: () => ({ meta: [{ title: "Kegiatan Lingkungan — Eco-School Waste Management" },
+      {"name": "description", "content": "Catat kegiatan lingkungan, peserta, dan hasil pengelolaan sampah sekolah."},
+      {"property": "og:title", "content": "Kegiatan Lingkungan — Eco-School Waste Management"},
+      {"property": "og:description", "content": "Catat kegiatan lingkungan, peserta, dan hasil pengelolaan sampah sekolah."},
+      {"property": "og:type", "content": "website"},
+      {"name": "twitter:card", "content": "summary_large_image"},
+    ] }),
   component: ActivitiesPage,
 });
 

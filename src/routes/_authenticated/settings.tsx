@@ -13,7 +13,13 @@ import { invalidateUserQueries } from "@/lib/query-invalidation";
 import { ROLE_LABEL, type AppRole } from "@/lib/waste";
 
 export const Route = createFileRoute("/_authenticated/settings")({
-  head: () => ({ meta: [{ title: "Pengguna dan Akses — Eco-School Waste Management" }] }),
+  head: () => ({ meta: [{ title: "Pengguna dan Akses — Eco-School Waste Management" },
+      {"name": "description", "content": "Kelola pengguna, peran, dan lingkup akses sekolah."},
+      {"property": "og:title", "content": "Pengguna dan Akses — Eco-School Waste Management"},
+      {"property": "og:description", "content": "Kelola pengguna, peran, dan lingkup akses sekolah."},
+      {"property": "og:type", "content": "website"},
+      {"name": "twitter:card", "content": "summary_large_image"},
+    ] }),
   component: SettingsPage,
 });
 
