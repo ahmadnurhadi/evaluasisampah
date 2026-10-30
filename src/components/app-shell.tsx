@@ -204,25 +204,6 @@ export function AppShell({
           <Button variant="ghost" size="icon" className="shrink-0" aria-label="Kembali" title="Kembali" onClick={handleBack}>
             <ArrowLeft className="size-5" />
           </Button>
-          <Sheet open={open} onOpenChange={setOpen}>
-            <SheetTrigger asChild>
-              <Button variant="outline" size="icon" className="lg:hidden" aria-label="Buka menu">
-                <Menu className="size-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-80 bg-sidebar p-0">
-              <SheetTitle className="sr-only">Menu navigasi</SheetTitle>
-              <Brand />
-              <div className="max-h-[calc(100vh-9rem)] overflow-y-auto">
-                <MenuGrid onNavigate={() => setOpen(false)} canRecord={canRecord} isManager={isManager} roles={roles} />
-              </div>
-              <div className="border-t border-sidebar-border p-3">
-                <Button variant="ghost" size="sm" className="w-full justify-start" onClick={handleSignOut}>
-                  <LogOut className="size-4" /> Keluar
-                </Button>
-              </div>
-            </SheetContent>
-          </Sheet>
           <div className="min-w-0 flex-1">
             <h1 className="font-display text-lg font-semibold leading-snug">{title}</h1>
             {description ? (
