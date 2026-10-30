@@ -66,7 +66,7 @@ function Landing() {
             <Link to="/auth" search={{ redirect: undefined }}>Mulai sekarang</Link>
           </Button>
           <Button asChild size="lg" variant="outline">
-            <Link to="/dashboard">Lihat dashboard</Link>
+            <Link to="/menu">Lihat menu utama</Link>
           </Button>
         </div>
       </section>

@@ -38,7 +38,7 @@ function AuthPage() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) window.location.replace(search.redirect ?? "/dashboard");
+      if (data.session) window.location.replace(search.redirect ?? "/menu");
     });
   }, [search.redirect]);
 
@@ -48,7 +48,7 @@ function AuthPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) return toast.error("Email atau kata sandi salah.");
-    window.location.replace(search.redirect ?? "/dashboard");
+    window.location.replace(search.redirect ?? "/menu");
   }
 
   return (
