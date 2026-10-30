@@ -1,6 +1,6 @@
 import { Link, useNavigate, useRouter, useRouterState } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import {
   ArrowLeft,
   LayoutDashboard,
@@ -23,7 +23,6 @@ import {
   Trash2,
   QrCode,
 } from "lucide-react";
-import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthProfile } from "@/hooks/use-auth";
@@ -84,7 +83,7 @@ function NavLinks({ onNavigate, canRecord, isManager, roles }: { onNavigate?: ()
   );
 }
 
-const MENU_TILE_COLORS = [
+export const MENU_TILE_COLORS = [
   "menu-tile-color-1",
   "menu-tile-color-2",
   "menu-tile-color-3",
@@ -92,47 +91,6 @@ const MENU_TILE_COLORS = [
   "menu-tile-color-5",
 ];
 
-function MenuGrid({ onNavigate, canRecord, isManager, roles }: { onNavigate: () => void; canRecord: boolean; isManager: boolean; roles: ReturnType<typeof useAuthProfile>["roles"] }) {
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const items = NAV_ITEMS
-    .filter((item) => item.permission !== "recorder" || canRecord)
-    .filter((item) => item.permission !== "manager" || isManager)
-    .filter((item) => item.to !== "/settings" || roles.some((role) => role === "super_admin" || role === "school_admin"));
-  return (
-    <nav aria-label="Menu utama" className="grid grid-cols-3 gap-x-3 gap-y-5 p-4">
-      {items.map((item, index) => {
-        const active = pathname === item.to || pathname.startsWith(`${item.to}/`);
-        const Icon = item.icon;
-        return (
-          <Link
-            key={item.to}
-            to={item.to}
-            onClick={onNavigate}
-            className="flex flex-col items-center gap-1.5"
-          >
-            <span
-              className={cn(
-                "flex size-14 items-center justify-center rounded-2xl shadow-sm transition-transform active:scale-90",
-                MENU_TILE_COLORS[index % MENU_TILE_COLORS.length],
-                active && "ring-2 ring-ring ring-offset-2 ring-offset-sidebar",
-              )}
-            >
-              <Icon className="size-6" />
-            </span>
-            <span
-              className={cn(
-                "min-w-0 text-center text-xs font-medium leading-snug",
-                active ? "text-primary" : "text-foreground/80",
-              )}
-            >
-              {item.label}
-            </span>
-          </Link>
-        );
-      })}
-    </nav>
-  );
-}
 
 function Brand() {
   return (
@@ -148,7 +106,7 @@ function Brand() {
   );
 }
 
-function MobileBottomNav({ canRecord, onOpenMenu }: { canRecord: boolean; onOpenMenu: () => void }) {
+function MobileBottomNav({ canRecord }: { canRecord: boolean }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const items = [
     { to: "/dashboard", label: "Beranda", icon: LayoutDashboard },
@@ -179,14 +137,16 @@ function MobileBottomNav({ canRecord, onOpenMenu }: { canRecord: boolean; onOpen
             </Link>
           );
         })}
-        <button
-          type="button"
-          onClick={onOpenMenu}
-          className="flex flex-col items-center gap-1 py-2 text-[11px] font-medium text-muted-foreground"
+        <Link
+          to="/menu"
+          className={cn(
+            "flex flex-col items-center gap-1 py-2 text-[11px] font-medium",
+            pathname === "/menu" ? "text-primary" : "text-muted-foreground",
+          )}
         >
           <Menu className="size-5" />
           Menu
-        </button>
+        </Link>
       </div>
     </nav>
   );
@@ -208,11 +168,10 @@ export function AppShell({
   const navigate = useNavigate();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [open, setOpen] = useState(false);
 
   function handleBack() {
     if (router.history.canGoBack()) router.history.back();
-    else navigate({ to: "/dashboard" });
+    else navigate({ to: "/menu" });
   }
 
   async function handleSignOut() {
@@ -241,29 +200,10 @@ export function AppShell({
       </aside>
 
       <div className="lg:pl-64">
-        <header className="sticky top-0 z-30 grid grid-cols-[auto_auto_minmax(0,1fr)] items-center gap-2 border-b border-border bg-background/85 px-4 py-3 backdrop-blur sm:flex sm:gap-3">
+        <header className="sticky top-0 z-30 grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2 border-b border-border bg-background/85 px-4 py-3 backdrop-blur sm:flex sm:gap-3">
           <Button variant="ghost" size="icon" className="shrink-0" aria-label="Kembali" title="Kembali" onClick={handleBack}>
             <ArrowLeft className="size-5" />
           </Button>
-          <Sheet open={open} onOpenChange={setOpen}>
-            <SheetTrigger asChild>
-              <Button variant="outline" size="icon" className="lg:hidden" aria-label="Buka menu">
-                <Menu className="size-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-80 bg-sidebar p-0">
-              <SheetTitle className="sr-only">Menu navigasi</SheetTitle>
-              <Brand />
-              <div className="max-h-[calc(100vh-9rem)] overflow-y-auto">
-                <MenuGrid onNavigate={() => setOpen(false)} canRecord={canRecord} isManager={isManager} roles={roles} />
-              </div>
-              <div className="border-t border-sidebar-border p-3">
-                <Button variant="ghost" size="sm" className="w-full justify-start" onClick={handleSignOut}>
-                  <LogOut className="size-4" /> Keluar
-                </Button>
-              </div>
-            </SheetContent>
-          </Sheet>
           <div className="min-w-0 flex-1">
             <h1 className="font-display text-lg font-semibold leading-snug">{title}</h1>
             {description ? (
@@ -272,7 +212,7 @@ export function AppShell({
           </div>
           {schoolScope.isSuperAdmin ? (
             <Select value={schoolScope.schoolId ?? "all"} onValueChange={(value) => schoolScope.setSchoolId(value === "all" ? "" : value)}>
-              <SelectTrigger aria-label="Lingkup sekolah" className="col-span-3 w-full min-w-0 shrink-0 sm:w-48">
+              <SelectTrigger aria-label="Lingkup sekolah" className="col-span-2 w-full min-w-0 shrink-0 sm:w-48">
                 <SelectValue placeholder="Pilih sekolah" />
               </SelectTrigger>
               <SelectContent>
@@ -287,7 +227,7 @@ export function AppShell({
         </header>
         <main className="mx-auto w-full max-w-7xl px-4 py-5 pb-28">{children}</main>
       </div>
-      <MobileBottomNav canRecord={canRecord} onOpenMenu={() => setOpen(true)} />
+      <MobileBottomNav canRecord={canRecord} />
     </div>
   );
 }
