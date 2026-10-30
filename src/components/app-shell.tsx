@@ -23,7 +23,6 @@ import {
   Trash2,
   QrCode,
 } from "lucide-react";
-import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthProfile } from "@/hooks/use-auth";
