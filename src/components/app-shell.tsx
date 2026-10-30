@@ -200,7 +200,7 @@ export function AppShell({
       </aside>
 
       <div className="lg:pl-64">
-        <header className="sticky top-0 z-30 grid grid-cols-[auto_auto_minmax(0,1fr)] items-center gap-2 border-b border-border bg-background/85 px-4 py-3 backdrop-blur sm:flex sm:gap-3">
+        <header className="sticky top-0 z-30 grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2 border-b border-border bg-background/85 px-4 py-3 backdrop-blur sm:flex sm:gap-3">
           <Button variant="ghost" size="icon" className="shrink-0" aria-label="Kembali" title="Kembali" onClick={handleBack}>
             <ArrowLeft className="size-5" />
           </Button>
@@ -212,7 +212,7 @@ export function AppShell({
           </div>
           {schoolScope.isSuperAdmin ? (
             <Select value={schoolScope.schoolId ?? "all"} onValueChange={(value) => schoolScope.setSchoolId(value === "all" ? "" : value)}>
-              <SelectTrigger aria-label="Lingkup sekolah" className="col-span-3 w-full min-w-0 shrink-0 sm:w-48">
+              <SelectTrigger aria-label="Lingkup sekolah" className="col-span-2 w-full min-w-0 shrink-0 sm:w-48">
                 <SelectValue placeholder="Pilih sekolah" />
               </SelectTrigger>
               <SelectContent>
@@ -227,7 +227,7 @@ export function AppShell({
         </header>
         <main className="mx-auto w-full max-w-7xl px-4 py-5 pb-28">{children}</main>
       </div>
-      <MobileBottomNav canRecord={canRecord} onOpenMenu={() => setOpen(true)} />
+      <MobileBottomNav canRecord={canRecord} />
     </div>
   );
 }
