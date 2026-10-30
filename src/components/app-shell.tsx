@@ -168,11 +168,10 @@ export function AppShell({
   const navigate = useNavigate();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [open, setOpen] = useState(false);
 
   function handleBack() {
     if (router.history.canGoBack()) router.history.back();
-    else navigate({ to: "/dashboard" });
+    else navigate({ to: "/menu" });
   }
 
   async function handleSignOut() {
