@@ -106,7 +106,7 @@ function Brand() {
   );
 }
 
-function MobileBottomNav({ canRecord, onOpenMenu }: { canRecord: boolean; onOpenMenu: () => void }) {
+function MobileBottomNav({ canRecord }: { canRecord: boolean }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const items = [
     { to: "/dashboard", label: "Beranda", icon: LayoutDashboard },
@@ -137,14 +137,16 @@ function MobileBottomNav({ canRecord, onOpenMenu }: { canRecord: boolean; onOpen
             </Link>
           );
         })}
-        <button
-          type="button"
-          onClick={onOpenMenu}
-          className="flex flex-col items-center gap-1 py-2 text-[11px] font-medium text-muted-foreground"
+        <Link
+          to="/menu"
+          className={cn(
+            "flex flex-col items-center gap-1 py-2 text-[11px] font-medium",
+            pathname === "/menu" ? "text-primary" : "text-muted-foreground",
+          )}
         >
           <Menu className="size-5" />
           Menu
-        </button>
+        </Link>
       </div>
     </nav>
   );
